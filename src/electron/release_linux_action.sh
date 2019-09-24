@@ -22,6 +22,9 @@ yarn do src/electron/package_common
 
 scripts/environment_json.sh -r -p linux > www/environment.json
 
+readonly S3_URL=https://s3.amazonaws.com/${OUTLINE_RELEASE_BUCKET:-outline-releases}/client
+echo "Updates fetched from ${S3_URL}"
+
 # Publishing is disabled, updates are pulled from AWS. We use the generic provider instead of the S3
 # provider since the S3 provider uses "virtual-hosted style" URLs (my-bucket.s3.amazonaws.com)
 # which can be blocked by DNS or SNI without taking down other buckets.
@@ -31,4 +34,4 @@ electron-builder \
   --config src/electron/electron-builder.json \
   --config.extraMetadata.version=$(scripts/semantic_version.sh -p linux) \
   --config.publish.provider=generic \
-  --config.publish.url=https://s3.amazonaws.com/outline-releases/client
+  --config.publish.url=${S3_URL}
