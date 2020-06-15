@@ -14,6 +14,8 @@
 
 'use strict';
 
+const path = require('path');
+
 const browserify = require('browserify');
 const babel = require('gulp-babel');
 const babel_preset_env = require('babel-preset-env');
@@ -23,6 +25,7 @@ const gulp = require('gulp');
 const gulpif = require('gulp-if');
 const gutil = require('gulp-util');
 const polymer_build = require('polymer-build');
+const nodeNotifier = require('node-notifier');
 const source = require('vinyl-source-stream');
 
 //////////////////
@@ -35,6 +38,15 @@ const source = require('vinyl-source-stream');
 
 const platform = gutil.env.platform || 'android';
 const isRelease = gutil.env.release;
+const watchNotify = gutil.env['notify'];
+const watchReinstallAndroidApp = gutil.env['reinstall-android-app'];
+const watchReloadMacosBrowser = gutil.env['reload-macos-browser'];
+
+if (typeof watchReloadMacosBrowser === 'boolean') {
+  console.error('--reload-macos-browser argument must include a browser name (e.g. --reload-macos-browser="Google Chrome")');
+
+  process.exit();
+}
 
 //////////////////
 //////////////////
@@ -142,11 +154,11 @@ const transpileWebApp = gulp.series(
 // *certain things won't behave as you'd expect*, notably cordova-custom-config.
 function cordovaPlatformAdd() {
   // "platform add" fails if the platform has already been added.
-  return runCommand(`test -d platforms/${platform} || cordova platform add ${platform}`);
+  return runCommand(`test -d platforms/${platform} || yarn cordova platform add ${platform}`);
 }
 
 function cordovaPrepare() {
-  return runCommand(`cordova prepare ${platform}`);
+  return runCommand(`yarn cordova prepare ${platform}`);
 }
 
 function xcode() {
@@ -162,16 +174,141 @@ function cordovaCompile() {
   // cordova-ios@5.0.0. See https://github.com/apache/cordova-ios/issues/404.
   const compileArgs = platform === 'ios' ? '--device --buildFlag="-UseModernBuildSystem=0"' : '';
   const releaseArgs = isRelease ? platform === 'android' ?
-                                  `--release -- --keystore=${gutil.env.KEYSTORE} ` +
+                                  `--release --keystore=${gutil.env.KEYSTORE} ` +
               `--storePassword=${gutil.env.STOREPASS} --alias=${gutil.env.KEYALIAS} ` +
               `--password=${gutil.env.KEYPASS}` :
                                   '--release' :
                                   '';
-  return runCommand(`cordova compile ${platform} ${compileArgs} ${releaseArgs} -- ${platformArgs}`);
+  return runCommand(`yarn cordova compile ${platform} ${compileArgs} ${releaseArgs} ${platformArgs}`);
 }
 
 const setupWebApp = gulp.series(buildWebApp, transpileWebApp, writeEnvJson);
 const setupCordova = gulp.series(cordovaPlatformAdd, cordovaPrepare, xcode);
+
+//////////////////
+//////////////////
+//
+// Watch tasks
+//
+//////////////////
+//////////////////
+
+const cordovaBuild = gulp.series(cordovaPrepare, xcode, cordovaCompile);
+
+/**
+ * Trigger system notification when rebuild complete if `--notify` argument
+ * passed
+ */
+function notifyRebuildComplete(done) {
+  if (!watchNotify) {
+    return;
+  }
+
+  nodeNotifier.notify({
+    icon: path.join(__dirname, 'resources/icons/osx/icon-64.png'),
+    message: `${platform} rebuild complete`,
+    remove: 'ALL',
+    title: 'outline-client',
+  });
+
+  done();
+}
+
+/**
+ * If platform is browser and `--reload-macos-browser` argument passed, use
+ * AppleScript to reload front tab of browser. (Only works on macOS since it
+ * relies on AppleScript, and only works on Chromium and Safari browsers since
+ * Firefox has a weak AppleScript dictionary.)
+ *
+ * If platform is android and `--reinstall-android-app` arugment passed, use
+ * `adb` to reinstall and start Android app on attached device. (This may not
+ * work well on some configurations -- it has only been tested on one machine.)
+ */
+function reloadAppOrBrowser(done) {
+  if (
+    platform === 'browser'
+    && typeof watchReloadMacosBrowser === 'string'
+  ) {
+    const appleScriptCommand = (() => {
+      if (watchReloadMacosBrowser.includes('Safari')) {
+        return 'set URL of front document to (URL of front document)';
+      }
+      if (watchReloadMacosBrowser.includes('Chrom') || watchReloadMacosBrowser.includes('Edge')) {
+        return 'reload active tab of window 1';
+      }
+      return null;
+    })();
+
+    if (typeof appleScriptCommand === 'string') {
+      runCommand(`osascript -e 'tell app "${watchReloadMacosBrowser}" to ${appleScriptCommand}'`);
+    } else {
+      console.warn(`Browser "${watchReloadMacosBrowser}" can’t be reloaded with AppleScript`);
+    }
+
+    return done();
+  }
+
+  if (
+    platform === 'android'
+    && watchReinstallAndroidApp
+  ) {
+    runCommand('adb install -r ./platforms/android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n org.outline.android.client/org.outline.android.client.MainActivity');
+
+    return done();
+  }
+
+  return done();
+}
+
+/**
+ * This is a slightly modified version of the transpileUiComponents task. It
+ * sources the files from `src/www/ui_components` rather than
+ * `www/ui_components`, which is rsynced during the buildWebApp task (in
+ * `src/www/build_action.sh`). The buildWebApp task is excluded from watch tasks
+ * to improve rebuild speed.
+ */
+function transpileUiComponentsWatch() {
+  return transpile([`src/www/ui_components/*.html`], `${WEBAPP_OUT}/ui_components`);
+}
+
+/**
+ * Watch for changes in www/ui_components/*.html and www/app/*.js and rebuild
+ * affected parts of the code.
+ *
+ * Note that this isn’t a full rebuild. It deliberately excludes parts of the
+ * rebuild process (e.g. transpileBowerComponents) to reduce the build time.
+ *
+ * www/app/*.js files are built by tsc, so src/www/watch_action.sh needs to be
+ * run in parallel.
+ *
+ * Note: This has only been tested with the browser and Android versions. It may
+ * not be compatible with other platforms, particularly Windows (Electron).
+ */
+function watch() {
+  console.info('Watching for changes to src/www/ui_components/*.html and www/app/*.js. Run ./src/www/watch_action.sh or ./src/electron/watch_action.sh in a separate shell for live reload on changes to src/www/app/*.ts')
+
+  gulp.watch(
+    [`src/www/ui_components/*.html`],
+    gulp.series(
+      transpileUiComponentsWatch,
+      rtlCss,
+      cordovaBuild,
+      reloadAppOrBrowser,
+      notifyRebuildComplete
+    ),
+  );
+
+  gulp.watch(
+    [`www/app/*.js`],
+    gulp.series(
+      copyBabelPolyfill,
+      browserifyAndBabelify,
+      cordovaBuild,
+      reloadAppOrBrowser,
+      notifyRebuildComplete
+    ),
+  );
+}
 
 //////////////////
 //////////////////
@@ -189,5 +326,8 @@ function writeEnvJson() {
       WEBAPP_OUT}/environment.json`);
 }
 
-exports.build = gulp.series(setupWebApp, setupCordova, cordovaCompile);
+const build = gulp.series(setupWebApp, setupCordova, cordovaCompile);
+
+exports.build = build;
 exports.setup = gulp.series(setupWebApp, setupCordova);
+exports.watch = gulp.series(build, watch);
