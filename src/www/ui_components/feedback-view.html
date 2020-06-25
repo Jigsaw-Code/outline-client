@@ -109,7 +109,9 @@
         ></p>
       </div>
       <div class="card-actions">
-        <paper-button id="submitButton" disabled$="[[submitting]]">[[submitButtonLabel]]</paper-button>
+        <paper-button id="submitButton" on-tap="_submitFeedback" disabled$="[[submitting]]"
+          >[[submitButtonLabel]]</paper-button
+        >
       </div>
     </paper-card>
   </template>
@@ -171,6 +173,14 @@
       // entered their email address.
       _computeShouldShowLanguageDisclaimer: function(hasEnteredEmail) {
         return !window.navigator.language.match(/^en/i) && hasEnteredEmail;
+      },
+      _submitFeedback: function(event) {
+        const params = {
+          bubbles: true,
+          composed: true,
+          detail: this.getValidatedFormData(),
+        };
+        this.dispatchEvent(new CustomEvent("SubmitFeedbackRequested", params));
       },
       getValidatedFormData: function() {
         var inputs = [this.$.categoryList, this.$.feedback, this.$.email];

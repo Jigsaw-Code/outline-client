@@ -103,7 +103,7 @@ export class App {
         'AutoConnectDialogDismissed', this.autoConnectDialogDismissed.bind(this));
     this.rootEl.addEventListener(
         'ShowServerRename', this.rootEl.showServerRename.bind(this.rootEl));
-    this.feedbackViewEl.$.submitButton.addEventListener('tap', this.submitFeedback.bind(this));
+    this.rootEl.addEventListener('SubmitFeedbackRequested', this.submitFeedback.bind(this));
     this.rootEl.addEventListener('PrivacyTermsAcked', this.ackPrivacyTerms.bind(this));
     this.rootEl.addEventListener('SetLanguageRequested', this.setAppLanguage.bind(this));
 
@@ -439,11 +439,10 @@ export class App {
   }
 
   private submitFeedback(event: CustomEvent) {
-    const formData = this.feedbackViewEl.getValidatedFormData();
-    if (!formData) {
+    if (!event.detail) {
       return;
     }
-    const {feedback, category, email} = formData;
+    const {feedback, category, email} = event.detail;
     this.rootEl.$.feedbackView.submitting = true;
     this.errorReporter.report(feedback, category, email)
         .then(
