@@ -20,3 +20,8 @@ export interface ShadowsocksConfig {
   method?: string;
   name?: string;
 }
+
+// Endpoint to retrieve Shadowsocks proxy configurations.
+export interface ShadowsocksConfigSource {
+  url: string;
+}

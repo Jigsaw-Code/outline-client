@@ -92,6 +92,14 @@ export class ServerUnreachable extends RegularNativeError {}
 export class IllegalServerConfiguration extends RegularNativeError {}
 export class NoAdminPermissions extends RegularNativeError {}
 export class SystemConfigurationException extends RegularNativeError {}
+export class UnsupportedServerConfiguration extends RegularNativeError {}
+export class TlsCertificateError extends RegularNativeError {}
+export class DomainResolutionError extends RegularNativeError {}
+export class HttpError extends RegularNativeError {
+  constructor(public statusCode = 500) {
+    super();
+  }
+}
 
 //////
 // Now, "unexpected" errors.
@@ -112,7 +120,6 @@ export class VpnStartFailure extends RedFlagNativeError {}
 //  - cordova-plugin-outline/outlinePlugin.js#ERROR_CODE
 //  - cordova-plugin-outline/android/java/org/outline/OutlinePlugin.java#ErrorCode
 //
-// TODO: Is it safe to re-use values here, i.e. is native node rebuilt in step with the TypeScript?
 export const enum ErrorCode {
   // TODO: NO_ERROR is weird. Only used internally by the Android plugin?
   NO_ERROR = 0,
@@ -128,7 +135,11 @@ export const enum ErrorCode {
   CONFIGURE_SYSTEM_PROXY_FAILURE = 9,
   NO_ADMIN_PERMISSIONS = 10,
   UNSUPPORTED_ROUTING_TABLE = 11,
-  SYSTEM_MISCONFIGURED = 12
+  SYSTEM_MISCONFIGURED = 12,
+  DNS_RESOLUTION_ERROR = 13,
+  TLS_CERTIFICATE_ERROR = 14,
+  HTTP_ERROR = 15,
+  UNSUPPORTED_SERVER_CONFIGURATION = 16
 }
 
 // Converts an ErrorCode - originating in "native" code - to an instance of the relevant
@@ -160,6 +171,12 @@ export function fromErrorCode(errorCode: ErrorCode): NativeError {
       return new UnsupportedRoutingTable();
     case ErrorCode.SYSTEM_MISCONFIGURED:
       return new SystemConfigurationException();
+    case ErrorCode.DNS_RESOLUTION_ERROR:
+      return new DomainResolutionError();
+    case ErrorCode.TLS_CERTIFICATE_ERROR:
+      return new TlsCertificateError();
+    case ErrorCode.HTTP_ERROR:
+      return new HttpError();
     default:
       throw new Error(`unknown ErrorCode ${errorCode}`);
   }
@@ -192,6 +209,12 @@ export function toErrorCode(e: NativeError): ErrorCode {
     return ErrorCode.NO_ADMIN_PERMISSIONS;
   } else if (e instanceof SystemConfigurationException) {
     return ErrorCode.SYSTEM_MISCONFIGURED;
+  } else if (e instanceof DomainResolutionError) {
+    return ErrorCode.DNS_RESOLUTION_ERROR;
+  } else if (e instanceof TlsCertificateError) {
+    return ErrorCode.TLS_CERTIFICATE_ERROR;
+  } else if (e instanceof HttpError) {
+    return ErrorCode.HTTP_ERROR;
   }
   throw new Error(`unknown NativeError ${e.name}`);
 }

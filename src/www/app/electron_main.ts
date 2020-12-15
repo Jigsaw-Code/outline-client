@@ -94,8 +94,8 @@ main({
     return (serverId: string, config: ServerConfig, eventQueue: EventQueue) => {
       return new OutlineServer(
           serverId, config,
-          isOsSupported ? new ElectronOutlineTunnel(config, serverId) :
-                          new FakeOutlineTunnel(config, serverId),
+          isOsSupported ? new ElectronOutlineTunnel(serverId, config.proxy) :
+                          new FakeOutlineTunnel(serverId, config.proxy),
           eventQueue);
     };
   },

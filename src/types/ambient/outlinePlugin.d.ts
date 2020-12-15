@@ -16,7 +16,10 @@
 
 declare type Tunnel = import('../../www/app/tunnel').Tunnel;
 declare type TunnelStatus = import('../../www/app/tunnel').TunnelStatus;
+declare type ProxyConfigResponse = import('../../www/app/tunnel').ProxyConfigResponse;
 declare type ShadowsocksConfig = import('../../www/model/shadowsocks').ShadowsocksConfig;
+declare type ShadowsocksConfigSource =
+    import('../../www/model/shadowsocks').ShadowsocksConfigSource;
 
 declare namespace cordova.plugins.outline {
   const log: {
@@ -34,13 +37,13 @@ declare namespace cordova.plugins.outline {
 
   // Implements the Tunnel interface with native functionality.
   class Tunnel implements Tunnel {
-    // Creates a new instance with `config`.
-    // A sequential ID will be generated if `id` is absent.
-    constructor(config: ShadowsocksConfig, id?: string);
+    constructor(id: string, config?: ShadowsocksConfig);
 
-    config: ShadowsocksConfig;
+    config?: ShadowsocksConfig;
 
     readonly id: string;
+
+    fetchProxyConfig(source: ShadowsocksConfigSource): Promise<ProxyConfigResponse>;
 
     start(): Promise<void>;
 

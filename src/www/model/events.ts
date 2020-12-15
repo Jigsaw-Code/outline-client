@@ -46,6 +46,10 @@ export class ServerReconnecting implements OutlineEvent {
   constructor(public readonly server: Server) {}
 }
 
+export class ServerConfigSourceUrlChanged implements OutlineEvent {
+  constructor(public readonly server: Server, public readonly url: string) {}
+}
+
 // Simple publisher-subscriber queue.
 export class EventQueue {
   private queuedEvents: OutlineEvent[] = [];

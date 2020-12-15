@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ShadowsocksConfig} from './shadowsocks';
+import {ShadowsocksConfig, ShadowsocksConfigSource} from './shadowsocks';
 
 // TODO: add guidelines for this file
 
 export interface Server {
   // A unique id that identifies this Server.
-  id: string;
+  readonly id: string;
 
   // The name of this server, as given by the user.
   name: string;
+
+  // Domain name or IP address, and port of the server.
+  readonly host: string;
 
   // The message identifier corresponding to the server error state. This identifier
   // must match one of the localized app message.
@@ -40,10 +43,21 @@ export interface Server {
   checkReachable(): Promise<boolean>;
 }
 
-export type ServerConfig = ShadowsocksConfig;
+
+export interface ServerConfig {
+  // Static proxy configuration.
+  readonly proxy?: ShadowsocksConfig;
+
+  // Dynamic proxy configuration retrieval source.
+  source?: ShadowsocksConfigSource;
+
+  // User-given name.
+  name?: string;
+}
 
 export interface ServerRepository {
   add(serverConfig: ServerConfig): void;
+  update(serverId: string, newConfig: ServerConfig): void;
   forget(serverId: string): void;
   undoForget(serverId: string): void;
   getAll(): Server[];

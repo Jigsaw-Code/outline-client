@@ -17,15 +17,18 @@ import * as uuidv4 from 'uuidv4';
 import {ServerAlreadyAdded, ShadowsocksUnsupportedCipher} from '../model/errors';
 import * as events from '../model/events';
 import {Server, ServerConfig, ServerRepository} from '../model/server';
-
+import {ShadowsocksConfig, ShadowsocksConfigSource} from '../model/shadowsocks';
 import {OutlineServer} from "./outline_server";
-
 
 export interface PersistentServer extends Server {
   config: ServerConfig;
 }
 
-interface ConfigById {
+export interface ConfigByIdV0 {
+  [serverId: string]: ShadowsocksConfig;
+}
+
+export interface ConfigById {
   [serverId: string]: ServerConfig;
 }
 
@@ -35,13 +38,20 @@ export type PersistentServerFactory =
 // Maintains a persisted set of servers and liaises with the core.
 export class PersistentServerRepository implements ServerRepository {
   // Name by which servers are saved to storage.
-  private static readonly SERVERS_STORAGE_KEY = 'servers';
+  public static readonly SERVERS_STORAGE_KEY_V0 = 'servers';
+  public static readonly SERVERS_STORAGE_KEY = 'servers_v1';
   private serverById!: Map<string, PersistentServer>;
   private lastForgottenServer: PersistentServer|null = null;
 
   constructor(
       public readonly createServer: PersistentServerFactory, private eventQueue: events.EventQueue,
       private storage: Storage) {
+    try {
+      migrateServerConfigStorageToV1(this.storage);
+    } catch (e) {
+      console.error(`failed to migrate storage to V1: ${e}`);
+      return;
+    }
     this.loadServers();
   }
 
@@ -58,13 +68,23 @@ export class PersistentServerRepository implements ServerRepository {
     if (alreadyAddedServer) {
       throw new ServerAlreadyAdded(alreadyAddedServer);
     }
-    if (!OutlineServer.isServerCipherSupported(serverConfig.method)) {
-      throw new ShadowsocksUnsupportedCipher(serverConfig.method || 'unknown');
+    if (!isServerCipherSupported(serverConfig)) {
+      throw new ShadowsocksUnsupportedCipher(serverConfig.proxy?.method || 'unknown');
     }
     const server = this.createServer(uuidv4(), serverConfig, this.eventQueue);
     this.serverById.set(server.id, server);
     this.storeServers();
     this.eventQueue.enqueue(new events.ServerAdded(server));
+  }
+
+  update(serverId: string, newConfig: ServerConfig) {
+    const server = this.serverById.get(serverId);
+    if (!server) {
+      console.warn(`cannot update nonexistent server ${serverId}`);
+      return;
+    }
+    server.config = newConfig;
+    this.storeServers();
   }
 
   rename(serverId: string, newName: string) {
@@ -125,8 +145,7 @@ export class PersistentServerRepository implements ServerRepository {
     this.storage.setItem(PersistentServerRepository.SERVERS_STORAGE_KEY, json);
   }
 
-  // Loads servers from storage,
-  // raising an error if there is any problem loading.
+  // Loads servers from storage, raising an error if there is any problem loading.
   private loadServers() {
     this.serverById = new Map<string, PersistentServer>();
     const serversJson = this.storage.getItem(PersistentServerRepository.SERVERS_STORAGE_KEY);
@@ -145,7 +164,7 @@ export class PersistentServerRepository implements ServerRepository {
         const config = configById[serverId];
         try {
           const server = this.createServer(serverId, config, this.eventQueue);
-          if (!OutlineServer.isServerCipherSupported(server.config.method)) {
+          if (!isServerCipherSupported(server.config)) {
             server.errorMessageId = 'unsupported-cipher';
           }
           this.serverById.set(serverId, server);
@@ -158,7 +177,47 @@ export class PersistentServerRepository implements ServerRepository {
   }
 }
 
+// Performs a data schema migration from `ConfigByIdV0` to `ConfigById` on `storage`.
+export function migrateServerConfigStorageToV1(storage: Storage) {
+  if (storage.getItem(PersistentServerRepository.SERVERS_STORAGE_KEY)) {
+    console.debug('server storage already migrated to V1');
+    return;
+  }
+  const serversJsonV0 = storage.getItem(PersistentServerRepository.SERVERS_STORAGE_KEY_V0);
+  if (!serversJsonV0) {
+    console.debug('no V0 servers found in storage');
+    return;
+  }
+
+  let configByIdV0: ConfigByIdV0 = {};
+  configByIdV0 = JSON.parse(serversJsonV0);
+  const configByIdV1: ConfigById = {};
+  for (const serverId in configByIdV0) {
+    if (!configByIdV0.hasOwnProperty(serverId)) {
+      continue;
+    }
+    const proxy = configByIdV0[serverId];
+    const name = proxy.name;
+    configByIdV1[serverId] = {proxy, name};
+  }
+
+  const serversJsonV1 = JSON.stringify(configByIdV1);
+  storage.setItem(PersistentServerRepository.SERVERS_STORAGE_KEY, serversJsonV1);
+}
+
 function configsMatch(left: ServerConfig, right: ServerConfig) {
-  return left.host === right.host && left.port === right.port && left.method === right.method &&
-      left.password === right.password;
+  if (left.source && right.source) {
+    return left.source.url === right.source.url;
+  } else if (left.proxy && right.proxy) {
+    return left.proxy.host === right.proxy.host && left.proxy.port === right.proxy.port &&
+        left.proxy.method === right.proxy.method && left.proxy.password === right.proxy.password;
+  }
+  return false;
+}
+
+function isServerCipherSupported(config: ServerConfig): boolean {
+  if (!config.proxy) {
+    return true;
+  }
+  return OutlineServer.isServerCipherSupported(config.proxy.method);
 }

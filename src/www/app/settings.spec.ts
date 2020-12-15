@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {InMemoryStorage} from '../infrastructure/memory_storage';
+
 import {Settings, SettingsKey} from './settings';
+
+const FAKE_SETTINGS_KEYS = ['key', 'key1', 'key2'];
 
 describe('Settings', () => {
   it('sets and gets settings', () => {
@@ -81,34 +85,3 @@ describe('Settings', () => {
     }).toThrowError(SyntaxError);
   });
 });
-
-const FAKE_SETTINGS_KEYS = ['key', 'key1', 'key2'];
-
-class InMemoryStorage implements Storage {
-  // Not implemented: only for the Storage interface.
-  readonly length = 0;
-  [key: string]: {};
-  [index: number]: string;
-
-  constructor(private store: Map<string, string> = new Map<string, string>()) {}
-
-  clear(): void {
-    throw new Error('InMemoryStorage.clear not implemented');
-  }
-
-  getItem(key: string): string|null {
-    return this.store.get(key) || null;
-  }
-
-  key(index: number): string|null {
-    throw new Error('InMemoryStorage.key not implemented');
-  }
-
-  removeItem(key: string): void {
-    throw new Error('InMemoryStorage.removeItem not implemented');
-  }
-
-  setItem(key: string, data: string): void {
-    this.store.set(key, data);
-  }
-}

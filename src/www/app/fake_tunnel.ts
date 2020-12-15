@@ -13,9 +13,9 @@
 // limitations under the License.
 
 import * as errors from '../model/errors';
-import {ShadowsocksConfig} from '../model/shadowsocks';
+import {ShadowsocksConfig, ShadowsocksConfigSource} from '../model/shadowsocks';
 
-import {Tunnel, TunnelStatus} from './tunnel';
+import {ProxyConfigResponse, Tunnel, TunnelStatus} from './tunnel';
 
 // Fake Tunnel implementation for demoing and testing.
 // Note that because this implementation does not emit disconnection events, "switching" between
@@ -23,14 +23,30 @@ import {Tunnel, TunnelStatus} from './tunnel';
 export class FakeOutlineTunnel implements Tunnel {
   private running = false;
 
-  constructor(public config: ShadowsocksConfig, public id: string) {}
+  constructor(public id: string, public config?: ShadowsocksConfig) {}
 
   private playBroken() {
-    return this.config.name?.toLowerCase().includes('broken');
+    return this.config ?.name ?.toLowerCase().includes('broken');
   }
 
   private playUnreachable() {
-    return this.config.name?.toLowerCase().includes('unreachable');
+    return this.config ?.name ?.toLowerCase().includes('unreachable');
+  }
+
+  async fetchProxyConfig(source: ShadowsocksConfigSource): Promise<ProxyConfigResponse> {
+    if (!source) {
+      throw new errors.IllegalServerConfiguration();
+    }
+    return {
+      statusCode: 200,
+      proxies: [{
+        host: '127.0.0.1',
+        port: 1080,
+        password: 'test',
+        method: 'chacha20-ietf-poly1305',
+        name: 'Dynamic Server'
+      }]
+    };
   }
 
   async start(): Promise<void> {

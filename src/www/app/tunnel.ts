@@ -12,12 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ShadowsocksConfig} from '../../www/model/shadowsocks';
+import {ShadowsocksConfig, ShadowsocksConfigSource} from '../../www/model/shadowsocks';
 
 export const enum TunnelStatus {
   CONNECTED,
   DISCONNECTED,
   RECONNECTING
+}
+
+// Response to a `ShadowsocksConfigSource` HTTP request.
+export interface ProxyConfigResponse {
+  // HTTP status code.
+  statusCode: number;
+
+  // Set after successfully retrieving and parsing the proxy configuration list.
+  proxies?: ShadowsocksConfig[];
+
+  // Set when the server responds with a HTTP redirect (3xx) code.
+  redirectUrl?: string;
 }
 
 // Represents a VPN tunnel to a Shadowsocks proxy server. Implementations provide native tunneling
@@ -27,7 +39,12 @@ export interface Tunnel {
   readonly id: string;
 
   // Shadowsocks proxy configuration.
-  config: ShadowsocksConfig;
+  config?: ShadowsocksConfig;
+
+  // Retrieves one or more proxy configurations from the proxy configuration source.
+  // Throws if `source` is not present or if there is an error retrieving
+  // the proxy configuration.
+  fetchProxyConfig(source: ShadowsocksConfigSource): Promise<ProxyConfigResponse>;
 
   // Connects a VPN, routing all device traffic to a Shadowsocks server as dictated by `config`.
   // If there is another running instance, broadcasts a disconnect event and stops the active

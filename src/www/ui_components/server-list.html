@@ -40,15 +40,10 @@
       }
     </style>
     <template is="dom-repeat" items="[[servers]]">
-      <!--
-        item.host actually calls the getter in OutlineServer instead of accessing .host in ServerConfig.
-        TODO get rid of the .host getter and force users of PersistentServer to all go through the config.
-      -->
       <server-card
         server-id="[[item.id]]"
         server-name="[[item.name]]"
         server-host="[[item.host]]"
-        server-port="[[item.config.port]]"
         error-message="[[localize(item.errorMessageId)]]"
         disabled="[[item.errorMessageId]]"
         localize="[[localize]]"

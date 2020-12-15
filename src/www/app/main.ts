@@ -54,21 +54,15 @@ function createServerRepo(
     if (repo.getAll().length === 0) {
       repo.add({
         name: 'Fake Working Server',
-        host: '127.0.0.1',
-        port: 123,
-        method: 'chacha20-ietf-poly1305'
+        proxy: {host: '127.0.0.1', port: 123, method: 'chacha20-ietf-poly1305'}
       });
       repo.add({
         name: 'Fake Broken Server',
-        host: '192.0.2.1',
-        port: 123,
-        method: 'chacha20-ietf-poly1305'
+        proxy: {host: '192.0.2.1', port: 123, method: 'chacha20-ietf-poly1305'}
       });
       repo.add({
         name: 'Fake Unreachable Server',
-        host: '10.0.0.24',
-        port: 123,
-        method: 'chacha20-ietf-poly1305'
+        proxy: {host: '10.0.0.24', port: 123, method: 'chacha20-ietf-poly1305'}
       });
     }
   }

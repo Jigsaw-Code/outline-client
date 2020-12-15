@@ -37,9 +37,8 @@ function quitApplication() {
   exec(function() {}, function() {}, PLUGIN_NAME, 'quitApplication', []);
 }
 
-var globalId = 100;  // Internal, incremental ID.
-
 // This must be kept in sync with:
+//  - cordova-plugin-outline/android/java/org/outline/OutlinePlugin.java#ErrorCode
 //  - cordova-plugin-outline/apple/src/OutlineVpn.swift#ErrorCode
 //  - cordova-plugin-outline/apple/vpn/PacketTunnelProvider.h#NS_ENUM
 //  - www/model/errors.ts
@@ -56,7 +55,11 @@ const ERROR_CODE = {
   CONFIGURE_SYSTEM_PROXY_FAILURE: 9,
   NO_ADMIN_PERMISSIONS: 10,
   UNSUPPORTED_ROUTING_TABLE: 11,
-  SYSTEM_MISCONFIGURED: 12
+  SYSTEM_MISCONFIGURED: 12,
+  DNS_RESOLUTION_ERROR: 13,
+  TLS_CERTIFICATE_ERROR: 14,
+  HTTP_ERROR: 15,
+  UNSUPPORTED_SERVER_CONFIGURATION: 16
 };
 
 // This must be kept in sync with the TypeScript definition:
@@ -65,22 +68,16 @@ function OutlinePluginError(errorCode) {
   this.errorCode = errorCode || ERROR_CODE.UNEXPECTED;
 }
 
+// This must be kept in sync with the TypeScript definition:
+//   www/app/tunnel.ts
 const TunnelStatus = {
   CONNECTED: 0,
   DISCONNECTED: 1,
   RECONNECTING: 2
 }
 
-function Tunnel(config, id) {
-  if (id) {
-    this.id_ = id.toString();
-  } else {
-    this.id_ = (globalId++).toString();
-  }
-
-  if (!config) {
-    throw new Error('Server configuration is required');
-  }
+function Tunnel(id, config) {
+  this.id = id;
   this.config = config;
 }
 
@@ -89,15 +86,25 @@ Tunnel.prototype._promiseExec = function(cmd, args) {
     const rejectWithError = function(errorCode) {
       reject(new OutlinePluginError(errorCode));
     };
-    exec(resolve, rejectWithError, PLUGIN_NAME, cmd, [this.id_].concat(args));
+    exec(resolve, rejectWithError, PLUGIN_NAME, cmd, [this.id].concat(args));
   }.bind(this));
 };
 
 Tunnel.prototype._exec = function(cmd, args, success, error) {
-  exec(success, error, PLUGIN_NAME, cmd, [this.id_].concat(args));
+  exec(success, error, PLUGIN_NAME, cmd, [this.id].concat(args));
+};
+
+Tunnel.prototype.fetchProxyConfig = function(configSource) {
+  if (!configSource) {
+    throw new OutlinePluginError(ERROR_CODE.ILLEGAL_SERVER_CONFIGURATION);
+  }
+  return this._promiseExec('fetchProxyConfig', [configSource]);
 };
 
 Tunnel.prototype.start = function() {
+  if (!this.config) {
+    throw new OutlinePluginError(ERROR_CODE.ILLEGAL_SERVER_CONFIGURATION);
+  }
   return this._promiseExec('start', [this.config]);
 };
 
@@ -110,12 +117,15 @@ Tunnel.prototype.isRunning = function() {
 };
 
 Tunnel.prototype.isReachable = function() {
+  if (!this.config) {
+    return new Promise.reject(new OutlinePluginError(ERROR_CODE.ILLEGAL_SERVER_CONFIGURATION));
+  }
   return this._promiseExec('isReachable', [this.config.host, this.config.port]);
 };
 
 Tunnel.prototype.onStatusChange = function(listener) {
   const onError = function(err) {
-    console.warn('Failed to execute disconnect listener', err);
+    console.warn('failed to execute status change listener', err);
   };
   this._exec('onStatusChange', [], listener, onError);
 };

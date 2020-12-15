@@ -157,13 +157,14 @@
         <div class="title">[[localize('server-add-access-key')]]</div>
         <div class="faded">[[localize('server-add-instructions')]]</div>
       </div>
+      <!-- TODO(alalama): display https://? -->
       <paper-input
         id="accessKeyInput"
         class="shadow"
         label="[[localize('server-access-key-label', 'ssProtocol', 'ss://')]]"
         no-label-float
         value="{{accessKey}}"
-        pattern="((ss://)|(https://s3\.amazonaws\.com/outline-vpn/((index\.html.*[#].*/invite/)|(invite\.html.*[#]))ss)).*"
+        pattern="((ss://)|(https://)).*"
       >
         <iron-icon icon="communication:vpn-key" slot="suffix"></iron-icon>
       </paper-input>

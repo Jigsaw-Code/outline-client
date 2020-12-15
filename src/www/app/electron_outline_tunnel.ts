@@ -16,16 +16,16 @@ import {ipcRenderer} from 'electron';
 import * as promiseIpc from 'electron-promise-ipc';
 
 import * as errors from '../model/errors';
-import {ShadowsocksConfig} from '../model/shadowsocks';
+import {ShadowsocksConfig, ShadowsocksConfigSource} from '../model/shadowsocks';
 
-import {Tunnel, TunnelStatus} from './tunnel';
+import {ProxyConfigResponse, Tunnel, TunnelStatus} from './tunnel';
 
 export class ElectronOutlineTunnel implements Tunnel {
   private statusChangeListener: ((status: TunnelStatus) => void)|null = null;
 
   private running = false;
 
-  constructor(public config: ShadowsocksConfig, public id: string) {
+  constructor(public id: string, public config?: ShadowsocksConfig) {
     // This event is received when the proxy connects. It is mainly used for signaling the UI that
     // the proxy has been automatically connected at startup (if the user was connected at shutdown)
     ipcRenderer.on(`proxy-connected-${this.id}`, (e: Event) => {
@@ -35,6 +35,17 @@ export class ElectronOutlineTunnel implements Tunnel {
     ipcRenderer.on(`proxy-reconnecting-${this.id}`, (e: Event) => {
       this.handleStatusChange(TunnelStatus.RECONNECTING);
     });
+  }
+
+  async fetchProxyConfig(source: ShadowsocksConfigSource): Promise<ProxyConfigResponse> {
+    try {
+      return promiseIpc.send('fetch-proxy-config', {source});
+    } catch (e) {
+      if (typeof e === 'number') {
+        throw new errors.OutlinePluginError(e);
+      }
+      throw e;
+    }
   }
 
   async start() {
