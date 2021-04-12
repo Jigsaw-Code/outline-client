@@ -1,0 +1,5 @@
+<i>Outline</i> ermöglicht die Verbindung mit einem VPN-Server (Virtual Private Network), der von Deiner Organisation oder einem Server Deines Vertrauens erstellt wurde, um einen sichereren Zugang zum offenen Internet zu erhalten und Deine Kommunikation privat zu halten. Wenn Du Zugang zu einem Outline-Server erhalten hast, lade diese App herunter, um mit wenigen Klicks eine Verbindung herzustellen.
+
+<i>Outline</i> unterstützt starke Verschlüsselung und ist für Windows, Android, Chrome OS und (bald) weitere Plattformen verfügbar. Es wurde für die Verwendung mit der Outline Server-Software entwickelt, ist aber vollständig kompatibel mit jedem Shadowsocks-Server, bei dem die UDP-Unterstützung aktiviert ist.
+
+<i>Outline</i> ist auch für Linux, iOS und Windows verfügbar.
