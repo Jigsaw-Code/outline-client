@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { IncomingMessage } from 'electron';
 import * as http from 'http';
 import * as https from 'https';
 import * as tls from 'tls';
@@ -53,8 +54,26 @@ export async function fetchHttps(request: HttpsRequest): Promise<HttpsResponse> 
     timeout: HTTPS_TIMEOUT_MS,
   };
   const agent = new https.Agent(agentOptions);
-  const options = {method: request.method || 'GET', agent};
-  const res: http.IncomingMessage = await new Promise(async (resolve, reject) => {
+  const options = {
+    method: request.method || 'GET',
+    agent,
+    checkServerIdentity: (host: string, cert: tls.PeerCertificate) => {
+      if (!validateServerCertificate) {
+        const err = tls.checkServerIdentity(host, cert);
+        if (err) {
+          return err;
+        }
+      }
+
+      const hexSha256CertFingerprint = cert.fingerprint256.replace(/:/g, '');
+      if (hexSha256CertFingerprint !== request.hexSha256CertFingerprint) {
+        return new errors.CertificateValidationError(
+          `server certificate fingerprint ${request.hexSha256CertFingerprint} does not match trusted fingerprint ${hexSha256CertFingerprint}`);
+      }
+    }
+  };
+
+  const res: http.IncomingMessage = await new Promise<http.IncomingMessage>((resolve, reject) => {
     const req = https.request(url, options, resolve);
     req.on('error', (err) => {
       reject(getOutlineError(err));
@@ -63,48 +82,18 @@ export async function fetchHttps(request: HttpsRequest): Promise<HttpsResponse> 
       req.emit('error', new errors.ConnectionTimeout());
       req.destroy();
     });
-    const tlsSocket = await getTlsSocket(req);
-    if (!validateServerCertificate) {
-      if (!tlsSocket.authorized) {
-        req.emit(
-            'error',
-            new errors.CertificateValidationError('failed to validate server certificate'));
-        return req.destroy();
-      }
-      return req.end();
-    }
-    // Validate server certificate against the trusted certificate fingerprint.
-    const cert = tlsSocket.getPeerCertificate();
-    const hexSha256CertFingerprint = cert.fingerprint256.replace(/:/g, '');
-    if (request.hexSha256CertFingerprint !== hexSha256CertFingerprint) {
-      req.emit(
-          'error',
-          new errors.CertificateValidationError(
-              'server certificate fingerprint does not match trusted fingerprint'));
-      return req.destroy();
-    }
     req.end();
   });
 
-  const statusCode = res.statusCode;
-  if (statusCode >= 400) {
-    return {statusCode};
-  } else if (statusCode >= 300) {
-    return {statusCode, redirectUrl: res.headers.location};
-  }
+    const statusCode = res.statusCode;
+    if (statusCode >= 400) {
+      return {statusCode};
+    } else if (statusCode >= 300) {
+      return {statusCode, redirectUrl: res.headers.location};
+    }
 
-  const data = await readResponseData(res);
-  return {statusCode, data};
-}
-
-function getTlsSocket(req: http.ClientRequest): Promise<tls.TLSSocket> {
-  return new Promise<tls.TLSSocket>(resolve => {
-    req.on('socket', socket => {
-      socket.on('secureConnect', () => {
-        resolve(socket as tls.TLSSocket);
-      });
-    });
-  });
+    const data = await readResponseData(res);
+    return {statusCode, data};
 }
 
 function readResponseData(res: http.IncomingMessage): Promise<string> {
