@@ -28,8 +28,10 @@ import * as connectivity from './connectivity';
 import * as errors from '../www/model/errors';
 
 import {ShadowsocksConfig} from '../www/app/config';
+import {HttpsRequest} from '../www/app/net';
 import {TunnelStatus} from '../www/app/tunnel';
 import {GoVpnTunnel} from './go_vpn_tunnel';
+import {fetchHttps} from './https';
 import {RoutingDaemon} from './routing_service';
 import {ShadowsocksLibevBadvpnTunnel} from './sslibev_badvpn_tunnel';
 import {TunnelStore, SerializableTunnel} from './tunnel_store';
@@ -74,11 +76,20 @@ let currentTunnel: VpnTunnel|undefined;
 
 function setupMenu(): void {
   if (debugMode) {
-    Menu.setApplicationMenu(Menu.buildFromTemplate([{
-      label: 'Developer',
-      submenu: Menu.buildFromTemplate(
-          [{role: 'reload'}, {role: 'forceReload'}, {role: 'toggleDevTools'}])
-    }]));
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      {
+        label: 'Developer',
+        submenu: Menu.buildFromTemplate(
+            [{role: 'reload'}, {role: 'forceReload'}, {role: 'toggleDevTools'}]),
+      },
+      {
+        label: 'Edit',
+        submenu: Menu.buildFromTemplate([
+          {role: 'undo'}, {role: 'redo'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'},
+          {role: 'selectAll'}
+        ])
+      }
+    ]));
   } else {
     // Hide standard menu.
     Menu.setApplicationMenu(null);
@@ -390,6 +401,15 @@ function main() {
   // This event fires whenever the app's window receives focus.
   app.on('browser-window-focus', () => {
     mainWindow?.webContents.send('push-clipboard');
+  });
+
+  promiseIpc.on('fetch-https', async (args: {req: HttpsRequest}) => {
+    try {
+      return await fetchHttps(args.req);
+    } catch (e) {
+      console.error(`failed to fetch https: ${e.message}`);
+      throw e;
+    }
   });
 
   promiseIpc.on('is-server-reachable', async (args: {hostname: string, port: number}) => {

@@ -55,7 +55,7 @@ class OutlineVpn: NSObject {
   @objc
   public enum ErrorCode: Int {
     case noError = 0
-    case undefined = 1
+    case unexpected = 1
     case vpnPermissionNotGranted = 2
     case invalidServerCredentials = 3
     case udpRelayNotEnabled = 4
@@ -369,7 +369,7 @@ class OutlineVpn: NSObject {
     guard let response = message else {
       return completion(ErrorCode.vpnStartFailure)
     }
-    let rawErrorCode = response[MessageKey.errorCode] as? Int ?? ErrorCode.undefined.rawValue
+    let rawErrorCode = response[MessageKey.errorCode] as? Int ?? ErrorCode.unexpected.rawValue
     if rawErrorCode == ErrorCode.noError.rawValue,
        let tunnelId = response[MessageKey.tunnelId] as? String {
       self.activeTunnelId = tunnelId
@@ -380,4 +380,3 @@ class OutlineVpn: NSObject {
   }
 
 }
-

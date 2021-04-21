@@ -93,6 +93,10 @@ class ElectronErrorReporter implements OutlineErrorReporter {
 }
 
 class ElectronNativeNetworking implements NativeNetworking {
+  async fetchHttps(req: HttpsRequest): Promise<HttpsResponse> {
+    return await promiseIpc.send('fetch-https', {req});
+  }
+
   async isServerReachable(hostname: string, port: number) {
     return promiseIpc.send('is-server-reachable', {hostname, port});
   }

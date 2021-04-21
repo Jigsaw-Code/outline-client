@@ -53,6 +53,8 @@
 		FC8C30EB1FA7C0F6004262BE /* CocoaLumberjackSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FC8C30E51FA7C0E9004262BE /* CocoaLumberjackSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FC8C30EC1FA7C106004262BE /* CocoaLumberjack.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC8C30E41FA7C0E9004262BE /* CocoaLumberjack.framework */; };
 		FC8C30FC1FA7DDCB004262BE /* OutlineSentryLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8C30FB1FA7DDCB004262BE /* OutlineSentryLogger.swift */; };
+		FCA1C654261F990300A82942 /* OutlineHttps.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA1C653261F990300A82942 /* OutlineHttps.swift */; };
+		FCA1C6582620155000A82942 /* Data+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA1C6572620155000A82942 /* Data+Extensions.swift */; };
 		FCDE2FB023270B8C006C5B2C /* Tun2socks.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC7B59BA223C585F00828002 /* Tun2socks.framework */; };
 /* End PBXBuildFile section */
 
@@ -182,6 +184,8 @@
 		FC8C30E41FA7C0E9004262BE /* CocoaLumberjack.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CocoaLumberjack.framework; path = "Outline/Plugins/cordova-plugin-outline/CocoaLumberjack.framework"; sourceTree = "<group>"; };
 		FC8C30E51FA7C0E9004262BE /* CocoaLumberjackSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CocoaLumberjackSwift.framework; path = "Outline/Plugins/cordova-plugin-outline/CocoaLumberjackSwift.framework"; sourceTree = "<group>"; };
 		FC8C30FB1FA7DDCB004262BE /* OutlineSentryLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OutlineSentryLogger.swift; path = "cordova-plugin-outline/OutlineSentryLogger.swift"; sourceTree = "<group>"; };
+		FCA1C653261F990300A82942 /* OutlineHttps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutlineHttps.swift; path = "cordova-plugin-outline/OutlineHttps.swift"; sourceTree = "<group>"; };
+		FCA1C6572620155000A82942 /* Data+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Data+Extensions.swift"; path = "cordova-plugin-outline/Data+Extensions.swift"; sourceTree = "<group>"; };
 		FCB2DED41F3E3CAD000C6A44 /* VpnExtension.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = VpnExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -231,6 +235,8 @@
 				FC28C282201A93D0005FD743 /* OutlineTunnel.swift */,
 				FC28C280201A93BF005FD743 /* OutlineVpn.swift */,
 				AA09EA80E0C54DFFB24A1810 /* OutlinePlugin.swift */,
+				FCA1C6572620155000A82942 /* Data+Extensions.swift */,
+				FCA1C653261F990300A82942 /* OutlineHttps.swift */,
 				FC8C30FB1FA7DDCB004262BE /* OutlineSentryLogger.swift */,
 				01C0FE24369C408597E6E257 /* OutlineConnectivity.swift */,
 				512326387AA5498389C6B4BA /* CDVDevice.m */,
@@ -588,12 +594,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC28C283201A93D0005FD743 /* OutlineTunnel.swift in Sources */,
+				FCA1C6582620155000A82942 /* Data+Extensions.swift in Sources */,
 				FC8C30FC1FA7DDCB004262BE /* OutlineSentryLogger.swift in Sources */,
 				70BD683318FFB02D00A1EFCF /* main.m in Sources */,
 				70BD686D18FFB0BF00A1EFCF /* AppDelegate.m in Sources */,
 				FC6E7F8E204DC1BE003CB365 /* CDVMacOsUrlHandler.swift in Sources */,
 				70BD686E18FFB0BF00A1EFCF /* MainViewController.m in Sources */,
 				737FCE3329B34151A67331B4 /* OutlinePlugin.swift in Sources */,
+				FCA1C654261F990300A82942 /* OutlineHttps.swift in Sources */,
 				591E137A57874E4A92300F1B /* OutlineConnectivity.swift in Sources */,
 				FC7D56051F86969E00ABD5CA /* EventMonitor.swift in Sources */,
 				7536DC53ADCD48E08CE24B94 /* CDVDevice.m in Sources */,

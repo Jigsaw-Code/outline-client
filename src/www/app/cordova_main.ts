@@ -29,7 +29,7 @@ import {EnvironmentVariables} from './environment';
 import {SentryErrorReporter} from './error_reporter';
 import {FakeNativeNetworking} from './fake_net';
 import {main} from './main';
-import {NativeNetworking} from './net';
+import {HttpsRequest, HttpsResponse, NativeNetworking} from './net';
 import {OutlinePlatform} from './platform';
 import {AbstractUpdater} from './updater';
 import * as interceptors from './url_interceptor';
@@ -63,6 +63,10 @@ export class CordovaErrorReporter extends SentryErrorReporter {
 }
 
 class CordovaNativeNetworking implements NativeNetworking {
+  async fetchHttps(req: HttpsRequest): Promise<HttpsResponse> {
+    return await cordova.plugins.outline.net.fetchHttps(req);
+  }
+
   async isServerReachable(hostname: string, port: number) {
     return cordova.plugins.outline.net.isServerReachable(hostname, port);
   }

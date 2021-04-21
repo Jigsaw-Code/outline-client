@@ -41,6 +41,8 @@
 		FC8C31091FAA8032004262BE /* OutlineSentryLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8C31081FAA8032004262BE /* OutlineSentryLogger.swift */; };
 		FC8C310B1FAA814A004262BE /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC8C310A1FAA814A004262BE /* NetworkExtension.framework */; };
 		FC8C310C1FAA88FB004262BE /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC8C310A1FAA814A004262BE /* NetworkExtension.framework */; };
+		FCA1C663262124E300A82942 /* Data+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA1C660262124E300A82942 /* Data+Extensions.swift */; };
+		FCA1C664262124E300A82942 /* OutlineHttps.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA1C662262124E300A82942 /* OutlineHttps.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -144,6 +146,7 @@
 		EB87FDF41871DAF40020F90C /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = config.xml; path = ../../config.xml; sourceTree = "<group>"; };
 		ED33DF2A687741AEAF9F8254 /* Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Bridging-Header.h"; sourceTree = "<group>"; };
 		F840E1F0165FE0F500CFE078 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = config.xml; path = Outline/config.xml; sourceTree = "<group>"; };
+		FC08AF4526213A9300919EC3 /* Outline-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Outline-Bridging-Header.h"; sourceTree = "<group>"; };
 		FC1ED84B220B8D8F0086CC4C /* Tun2socks.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Tun2socks.framework; path = "Outline/Plugins/cordova-plugin-outline/Tun2socks.framework"; sourceTree = "<group>"; };
 		FC1FCADE216D2A6E00F078A5 /* Subnet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Subnet.swift; path = Outline/Resources/vpn/Subnet.swift; sourceTree = SOURCE_ROOT; };
 		FC28C295201BB4E9005FD743 /* OutlineTunnel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OutlineTunnel.swift; path = "cordova-plugin-outline/OutlineTunnel.swift"; sourceTree = "<group>"; };
@@ -155,6 +158,8 @@
 		FC8C30EF1FA7C2D7004262BE /* CocoaLumberjackSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CocoaLumberjackSwift.framework; path = "Outline/Plugins/cordova-plugin-outline/CocoaLumberjackSwift.framework"; sourceTree = "<group>"; };
 		FC8C31081FAA8032004262BE /* OutlineSentryLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OutlineSentryLogger.swift; path = "cordova-plugin-outline/OutlineSentryLogger.swift"; sourceTree = "<group>"; };
 		FC8C310A1FAA814A004262BE /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		FCA1C660262124E300A82942 /* Data+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Data+Extensions.swift"; path = "cordova-plugin-outline/Data+Extensions.swift"; sourceTree = "<group>"; };
+		FCA1C662262124E300A82942 /* OutlineHttps.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OutlineHttps.swift; path = "cordova-plugin-outline/OutlineHttps.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -241,6 +246,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				FC08AF4526213A9300919EC3 /* Outline-Bridging-Header.h */,
 				FC55AB411F4F960A0056F12C /* VpnExtension-Info.plist */,
 				0207DA571B56EA530066E2B4 /* Images.xcassets */,
 				3047A50E1AB8057F00498E2A /* config */,
@@ -287,15 +293,17 @@
 		307C750510C5A3420062BCA9 /* Plugins */ = {
 			isa = PBXGroup;
 			children = (
+				FCA1C660262124E300A82942 /* Data+Extensions.swift */,
+				119806AF98394D7D8749BB30 /* OutlineConnectivity.swift */,
+				FCA1C662262124E300A82942 /* OutlineHttps.swift */,
+				AAFAFA54943F490EAF4CD5BC /* OutlinePlugin.swift */,
+				FC8C31081FAA8032004262BE /* OutlineSentryLogger.swift */,
 				FC28C295201BB4E9005FD743 /* OutlineTunnel.swift */,
 				FC28C297201BB4E9005FD743 /* OutlineVpn.swift */,
-				FC8C31081FAA8032004262BE /* OutlineSentryLogger.swift */,
 				38EC0895182E411AAF640B74 /* CDVDevice.m */,
 				39B1C9CCA30941A2B4D57349 /* CDVDevice.h */,
 				0394302BA6114B2AB648D4FF /* CDVStatusBar.m */,
 				0168F53D3AFF46F5B346C874 /* CDVStatusBar.h */,
-				AAFAFA54943F490EAF4CD5BC /* OutlinePlugin.swift */,
-				119806AF98394D7D8749BB30 /* OutlineConnectivity.swift */,
 				91E45572BB494E9299D2DD41 /* CDVClipboard.m */,
 				936C2951B7544BC8A20B6746 /* CDVClipboard.h */,
 			);
@@ -507,8 +515,10 @@
 				302D95F114D2391D003F00A1 /* MainViewController.m in Sources */,
 				B1BB6490DBB84F82829D4174 /* CDVDevice.m in Sources */,
 				5F7F90AE0E924FD7B065C415 /* CDVStatusBar.m in Sources */,
+				FCA1C664262124E300A82942 /* OutlineHttps.swift in Sources */,
 				2A617D29B96942E58B082FAC /* OutlinePlugin.swift in Sources */,
 				FC8C31091FAA8032004262BE /* OutlineSentryLogger.swift in Sources */,
+				FCA1C663262124E300A82942 /* Data+Extensions.swift in Sources */,
 				7213383E07114591931284F8 /* OutlineConnectivity.swift in Sources */,
 				1273B4E700B84E31B2528701 /* CDVClipboard.m in Sources */,
 			);
@@ -585,6 +595,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				STRIP_BITCODE_FROM_COPIED_FILES = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Outline/Resources/Outline-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -626,6 +637,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				STRIP_BITCODE_FROM_COPIED_FILES = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Outline/Resources/Outline-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

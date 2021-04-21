@@ -75,7 +75,7 @@ class OutlinePlugin: CDVPlugin {
                        errorCode: OutlineVpn.ErrorCode.illegalServerConfiguration)
     }
     DDLogInfo("\(Action.start) \(tunnelId)")
-    guard let config = command.argument(at: 1) as? [String: Any], containsExpectedKeys(config) else {
+    guard let config = command.argument(at: 1) as? [String: Any], configContainsExpectedKeys(config) else {
       return sendError("Invalid configuration", callbackId: command.callbackId,
                        errorCode: OutlineVpn.ErrorCode.illegalServerConfiguration)
     }
@@ -121,6 +121,16 @@ class OutlinePlugin: CDVPlugin {
     sendSuccess(OutlineVpn.shared.isActive(tunnelId), callbackId: command.callbackId)
   }
 
+  func onStatusChange(_ command: CDVInvokedUrlCommand) {
+    guard let tunnelId = command.argument(at: 0) as? String else {
+      return sendError("Missing tunnel ID", callbackId: command.callbackId)
+    }
+    DDLogInfo("\(Action.onStatusChange) \(tunnelId)")
+    setCallbackId(command.callbackId!, action: Action.onStatusChange, tunnelId: tunnelId)
+  }
+
+  // MARK: Networking
+
   func isServerReachable(_ command: CDVInvokedUrlCommand) {
     DDLogInfo("isServerReachable")
     guard let host = command.argument(at: 0) as? String else {
@@ -134,12 +144,46 @@ class OutlinePlugin: CDVPlugin {
     }
   }
 
-  func onStatusChange(_ command: CDVInvokedUrlCommand) {
-    guard let tunnelId = command.argument(at: 0) as? String else {
-      return sendError("Missing tunnel ID", callbackId: command.callbackId)
+  func fetchHttps(_ command: CDVInvokedUrlCommand) {
+    DDLogInfo("fetchHttps")
+    guard let requestDict = command.argument(at: 0) as? [String: Any?],
+          let request = dictToHttpsRequest(dict: requestDict) else {
+      return sendError("Missing HTTPs request", callbackId: command.callbackId)
     }
-    DDLogInfo("\(Action.onStatusChange) \(tunnelId)")
-    setCallbackId(command.callbackId!, action: Action.onStatusChange, tunnelId: tunnelId)
+    HttpsFetch(request: request) { (response, error) in
+      guard error == nil else {
+        let nsError = error! as NSError
+        let errorMessage = "\(nsError.domain) \(nsError.code)"
+        DDLogError("Failed to fetch HTTPs: \(errorMessage)")
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorMessage)
+        return self.send(pluginResult: result, callbackId: command.callbackId, keepCallback: false)
+      }
+      let responseDict = self.httpsResponseToDict(response: response) as [AnyHashable : Any]
+      let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: responseDict)
+      self.send(pluginResult: result, callbackId: command.callbackId, keepCallback: false)
+    }
+  }
+
+  private func dictToHttpsRequest(dict: [String: Any?]) -> HttpsRequest? {
+    guard let url = dict["url"] as? String else {
+      return nil
+    }
+    let method = dict["method"] as? String ?? "GET"
+    var certFingerprint: Data? = nil
+    if let hexSha256CertFingerprint = dict["hexSha256CertFingerprint"] as? String {
+      certFingerprint = Data(hex: hexSha256CertFingerprint)
+    }
+    return HttpsRequest(url: url, method: method, certFingerprint: certFingerprint)
+  }
+
+  private func httpsResponseToDict(response: HttpsResponse?) -> [String: Any?] {
+    var dict = [String: Any?]()
+    dict["statusCode"] = response?.statusCode
+    dict["redirectUrl"] = response?.redirectUrl
+    if let body = response?.body {
+      dict["body"] = String(data: body, encoding: .utf8)
+    }
+    return dict
   }
 
   // MARK: Error reporting
@@ -152,7 +196,7 @@ class OutlinePlugin: CDVPlugin {
     do {
       Client.shared = try Client(dsn: apiKey)
       try Client.shared?.startCrashHandler()
-      Client.shared?.breadcrumbs.maxBreadcrumbs = OutlinePlugin.kMaxBreadcrumbs;
+      Client.shared?.breadcrumbs.maxBreadcrumbs = OutlinePlugin.kMaxBreadcrumbs
       sendSuccess(true, callbackId: command.callbackId)
     } catch let error {
       sendError("Failed to init error reporting: \(error)", callbackId: command.callbackId)
@@ -239,7 +283,7 @@ class OutlinePlugin: CDVPlugin {
       case .reasserting:
         tunnelStatus = OutlineTunnel.TunnelStatus.reconnecting.rawValue
       default:
-        return;  // Do not report transient or invalid states.
+        return  // Do not report transient or invalid states.
     }
     DDLogDebug("Calling onStatusChange (\(tunnelStatus)) for tunnel \(tunnelId)")
     if let callbackId = getCallbackIdFor(action: Action.onStatusChange,
@@ -251,7 +295,7 @@ class OutlinePlugin: CDVPlugin {
   }
 
   // Returns whether |config| contains all the expected keys
-  private func containsExpectedKeys(_ config: [String: Any]?) -> Bool {
+  private func configContainsExpectedKeys(_ config: [String: Any]?) -> Bool {
     return config?["host"] != nil && config?["port"] != nil &&
         config?["password"] != nil && config?["method"] != nil
   }
@@ -269,7 +313,7 @@ class OutlinePlugin: CDVPlugin {
   }
 
   private func sendError(_ message: String, callbackId: String,
-                         errorCode: OutlineVpn.ErrorCode = OutlineVpn.ErrorCode.undefined,
+                         errorCode: OutlineVpn.ErrorCode = OutlineVpn.ErrorCode.unexpected,
                          keepCallback: Bool = false) {
     DDLogError(message)
     let result = CDVPluginResult(status: CDVCommandStatus_ERROR,
@@ -279,7 +323,7 @@ class OutlinePlugin: CDVPlugin {
 
   private func send(pluginResult: CDVPluginResult?, callbackId: String, keepCallback: Bool) {
     guard let result = pluginResult else {
-      return DDLogWarn("Missing plugin result");
+      return DDLogWarn("Missing plugin result")
     }
     result.setKeepCallbackAs(keepCallback)
     self.commandDelegate?.send(result, callbackId: callbackId)

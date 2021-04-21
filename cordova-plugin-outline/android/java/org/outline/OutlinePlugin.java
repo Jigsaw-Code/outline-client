@@ -25,9 +25,9 @@ import android.content.ServiceConnection;
 import android.net.VpnService;
 import android.os.IBinder;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.cordova.CallbackContext;
@@ -38,6 +38,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.outline.log.OutlineLogger;
 import org.outline.log.SentryErrorReporter;
+import org.outline.net.Https;
 import org.outline.shadowsocks.ShadowsocksConnectivity;
 import org.outline.vpn.VpnServiceStarter;
 import org.outline.vpn.VpnTunnelService;
@@ -52,6 +53,7 @@ public class OutlinePlugin extends CordovaPlugin {
     ON_STATUS_CHANGE("onStatusChange"),
     IS_RUNNING("isRunning"),
     IS_REACHABLE("isServerReachable"),
+    FETCH_HTTPS("fetchHttps"),
     INIT_ERROR_REPORTING("initializeErrorReporting"),
     REPORT_EVENTS("reportEvents"),
     QUIT("quitApplication");
@@ -254,6 +256,15 @@ public class OutlinePlugin extends CordovaPlugin {
           boolean isReachable =
               ShadowsocksConnectivity.isServerReachable(args.getString(0), args.getInt(1));
           callback.sendPluginResult(new PluginResult(PluginResult.Status.OK, isReachable));
+        } else if (Action.FETCH_HTTPS.is(action)) {
+          try {
+            Https.Request request = Https.jsonObjectToRequest(args.getJSONObject(0));
+            Https.Response response = Https.fetch(request);
+            callback.success(Https.responseToJsonObject(response));
+          } catch (Exception e) {
+            LOG.log(Level.WARNING, "failed to fetch HTTPS", e);
+            callback.error(e.getClass().getSimpleName());
+          }
         } else if (Action.INIT_ERROR_REPORTING.is(action)) {
           errorReportingApiKey = args.getString(0);
           // Treat failures to initialize error reporting as unexpected by propagating exceptions.

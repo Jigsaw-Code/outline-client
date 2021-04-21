@@ -94,10 +94,6 @@ declare namespace cordova.plugins.outline {
     // Returns whether the tunnel instance is active.
     isRunning(): Promise<boolean>;
 
-    // Returns whether the proxy server is reachable by attempting to establish
-    // a socket to the IP and port specified in |config|.
-    isReachable(): Promise<boolean>;
-
     // Sets a listener, to be called when the VPN tunnel status changes.
     onStatusChange(listener: (status: TunnelStatus) => void): void;
   }

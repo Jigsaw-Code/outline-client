@@ -41,6 +41,15 @@ const net = {
       };
       exec(resolve, rejectWithError, PLUGIN_NAME, 'isServerReachable', [hostname, port]);
     });
+  },
+
+  fetchHttps: function(req) {
+    return new Promise(function(resolve, reject) {
+      const rejectWithError = function(errorMessage) {
+        reject(new Error(errorMessage));
+      };
+      exec(resolve, rejectWithError, PLUGIN_NAME, 'fetchHttps', [req]);
+    });
   }
 };
 

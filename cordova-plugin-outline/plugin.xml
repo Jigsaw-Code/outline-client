@@ -71,6 +71,9 @@
     <source-file
       src="android/java/org/outline/log"
       target-dir="app/src/main/java/org/outline" />
+    <source-file
+      src="android/java/org/outline/net"
+      target-dir="app/src/main/java/org/outline" />
 
     <source-file
       src="android/libs/arm64-v8a/libss-local.so"
@@ -116,11 +119,14 @@
 
     <hook type="before_plugin_install" src="apple/scripts/copy_third_party_frameworks_ios.js" />
 
+    <source-file src="apple/src/Data+Extensions.swift" />
     <source-file src="apple/src/OutlinePlugin.swift" />
     <source-file src="apple/src/OutlineConnectivity.swift" />
+    <source-file src="apple/src/OutlineHttps.swift" />
     <source-file src="apple/src/OutlineSentryLogger.swift" />
     <source-file src="apple/src/OutlineTunnel.swift" />
     <source-file src="apple/src/OutlineVpn.swift" />
+    <resource-file src="apple/src/Outline-Bridging-Header.h" />
     <resource-file src="apple/vpn" />
 
     <framework src="apple/lib/ios/Tun2socks.framework" custom="true" />
@@ -140,12 +146,14 @@
 
     <hook type="before_plugin_install" src="apple/scripts/copy_third_party_frameworks_macos.js" />
 
+    <source-file src="apple/src/Data+Extensions.swift" />
     <source-file src="apple/src/OutlinePlugin.swift" />
     <source-file src="apple/src/OutlineConnectivity.swift" />
+    <source-file src="apple/src/OutlineHttps.swift" />
     <source-file src="apple/src/OutlineSentryLogger.swift" />
     <source-file src="apple/src/OutlineTunnel.swift" />
     <source-file src="apple/src/OutlineVpn.swift" />
-    <resource-file src="apple/src/macos/Outline-Bridging-Header.h" />
+    <resource-file src="apple/src/Outline-Bridging-Header.h" />
     <resource-file src="apple/vpn" />
 
     <framework src="apple/lib/macos/Tun2socks.framework" custom="true" />

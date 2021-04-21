@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {NativeNetworking} from './net';
+import {HttpsRequest, HttpsResponse, NativeNetworking} from './net';
 
 export class FakeNativeNetworking implements NativeNetworking {
   async isServerReachable(hostname: string, port: number) {
     return !hostname.includes('unreachable');
+  }
+
+  async fetchHttps(req: HttpsRequest): Promise<HttpsResponse> {
+    //  TODO(alalama): implement unit test and demo UI behavior.
+    return {statusCode: 404};
   }
 }

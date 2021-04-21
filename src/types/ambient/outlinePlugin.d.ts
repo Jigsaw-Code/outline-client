@@ -14,6 +14,8 @@
 
 // Typings for cordova-plugin-outline
 
+declare type HttpsRequest = import('../../www/app/net').HttpsRequest;
+declare type HttpsResponse = import('../../www/app/net').HttpsResponse;
 declare type Tunnel = import('../../www/app/tunnel').Tunnel;
 declare type TunnelStatus = import('../../www/app/tunnel').TunnelStatus;
 declare type ShadowsocksConfig = import('../../www/app/config').ShadowsocksConfig;
@@ -30,6 +32,7 @@ declare namespace cordova.plugins.outline {
   };
 
   const net: {
+    fetchHttps(req: HttpsRequest): Promise<HttpsResponse>;
     isServerReachable(hostname: string, port: number): Promise<boolean>;
   };
 

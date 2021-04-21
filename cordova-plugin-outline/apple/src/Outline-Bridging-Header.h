@@ -17,6 +17,6 @@
 
 #import <Foundation/Foundation.h>
 #import <Cordova/CDV.h>
-
+#import <CommonCrypto/CommonDigest.h>
 
 #endif /* Outline_Bridging_Header_h */
