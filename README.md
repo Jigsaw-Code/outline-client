@@ -77,11 +77,7 @@ To learn more about developing for Apple, see [docs/apple-development](docs/appl
 
 Unlike the Android and Apple clients, the Windows and Linux clients use the Electron framework, rather than Cordova.
 
-### Windows
-
-Additional requirements for building on Windows:
-
-* [Cygwin](https://cygwin.com/install.html). It provides the "missing Unix pieces" required by build system such as rsync (and many others).  It may be necessary to manually choose to install `rsync` in the Cygwin installer.
+### Development
 
 To build the Electron clients, run:
 
@@ -94,7 +90,61 @@ To run the Electron clients, run:
 To package the Electron clients into an installer executable, run:
 
     yarn do src/electron/package_[linux|windows]
+ 
+#### VSCode
 
+If using VSCode to develop, then insert the following into your `.vscode` folder
+
+`launch.json`
+
+    {
+      "version": "0.2.0",
+      "configurations": [
+        {
+          "name": "Debug Client",
+          "type": "node",
+          "request": "launch",
+          "cwd": "${workspaceFolder}",
+          "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+          "windows": {
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+          },
+          "args" : ["."],
+          "outputCapture": "std",
+          "preLaunchTask": "Build Electron Client",
+          "outFiles": ["${workspaceFolder}/www/**/*.js"]
+        }
+      ]
+    }   
+
+ `tasks.json`
+
+    {
+      "version": "2.0.0",
+      "tasks": [
+        {
+          "label": "Build Electron Client",
+          "type": "shell",
+          "command": "yarn do src/electron/build",
+          "windows": {
+            "command": "yarn do src/electron/build"
+          },
+          "group": "build",
+          "presentation": {
+            "reveal": "always",
+            "panel": "new"
+          }
+        }
+      ]
+    }
+
+Then select the "
+
+### Windows
+
+Additional requirements for building on Windows:
+
+* [Cygwin](https://cygwin.com/install.html). It provides the "missing Unix pieces" required by build system such as rsync (and many others).  It may be necessary to manually choose to install `rsync` in the Cygwin installer.
 
 ## Error reporting
 
