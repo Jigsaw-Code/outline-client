@@ -83,7 +83,7 @@
     "jasmine": "^3.0.0",
     "minimist": "^1.2.5",
     "outline-i18n": "github:Jigsaw-Code/outline-i18n#v0.0.7",
-    "postcss": "^7.0.29",
+    "postcss": "^7.0.36",
     "postcss-rtl": "^1.7.3",
     "prettier": "^1.19.1",
     "pretty-quick": "^2.0.1",
