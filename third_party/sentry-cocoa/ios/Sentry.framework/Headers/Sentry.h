@@ -1,11 +1,3 @@
-//
-//  Sentry.h
-//  Sentry
-//
-//  Created by Daniel Griesser on 02/05/2017.
-//  Copyright © 2017 Sentry. All rights reserved.
-//
-
 #import <Foundation/Foundation.h>
 
 //! Project version number for Sentry.
@@ -14,53 +6,32 @@ FOUNDATION_EXPORT double SentryVersionNumber;
 //! Project version string for Sentry.
 FOUNDATION_EXPORT const unsigned char SentryVersionString[];
 
-#if __has_include(<Sentry/Sentry.h>)
-
-#import <Sentry/SentryCrash.h>
-#import <Sentry/SentryClient.h>
-#import <Sentry/SentrySwizzle.h>
-
-#import <Sentry/SentryNSURLRequest.h>
-
-#import <Sentry/SentrySerializable.h>
-
-#import <Sentry/SentryEvent.h>
-#import <Sentry/SentryThread.h>
-#import <Sentry/SentryMechanism.h>
-#import <Sentry/SentryException.h>
-#import <Sentry/SentryStacktrace.h>
-#import <Sentry/SentryFrame.h>
-#import <Sentry/SentryUser.h>
-#import <Sentry/SentryDebugMeta.h>
-#import <Sentry/SentryContext.h>
-#import <Sentry/SentryBreadcrumb.h>
-#import <Sentry/SentryBreadcrumbStore.h>
-
-#import <Sentry/SentryJavaScriptBridgeHelper.h>
-
-#else
-
-#import "SentryCrash.h"
-#import "SentryClient.h"
-#import "SentrySwizzle.h"
-
-#import "SentryNSURLRequest.h"
-
-#import "SentrySerializable.h"
-
-#import "SentryEvent.h"
-#import "SentryThread.h"
-#import "SentryMechanism.h"
-#import "SentryException.h"
-#import "SentryStacktrace.h"
-#import "SentryFrame.h"
-#import "SentryUser.h"
-#import "SentryDebugMeta.h"
-#import "SentryContext.h"
+#import "SentryAttachment.h"
 #import "SentryBreadcrumb.h"
-#import "SentryBreadcrumbStore.h"
-
-#import "SentryJavaScriptBridgeHelper.h"
-
-#endif
-
+#import "SentryClient.h"
+#import "SentryCrashExceptionApplication.h"
+#import "SentryDebugMeta.h"
+#import "SentryDefines.h"
+#import "SentryDsn.h"
+#import "SentryEnvelope.h"
+#import "SentryEnvelopeItemType.h"
+#import "SentryError.h"
+#import "SentryEvent.h"
+#import "SentryException.h"
+#import "SentryFrame.h"
+#import "SentryHub.h"
+#import "SentryId.h"
+#import "SentryIntegrationProtocol.h"
+#import "SentryMechanism.h"
+#import "SentryMessage.h"
+#import "SentryNSError.h"
+#import "SentryOptions.h"
+#import "SentrySDK.h"
+#import "SentryScope.h"
+#import "SentrySdkInfo.h"
+#import "SentrySerializable.h"
+#import "SentrySession.h"
+#import "SentryStacktrace.h"
+#import "SentryThread.h"
+#import "SentryUser.h"
+#import "SentryUserFeedback.h"

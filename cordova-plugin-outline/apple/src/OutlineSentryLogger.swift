@@ -58,21 +58,25 @@ class OutlineSentryLogger: DDAbstractLogger {
 
   // Adds |logMessage| to Sentry as a breadcrumb.
   override func log(message logMessage: DDLogMessage) {
-    let breadcrumb = Breadcrumb(level: ddLogLevelToSentrySeverity(logMessage.level), category:"App")
+    let breadcrumb = Breadcrumb(level: ddLogLevelToSentryLevel(logMessage.level), category:"App")
     breadcrumb.message = logMessage.message
     breadcrumb.timestamp = logMessage.timestamp
-    if let sentryClient = Client.shared {
+    if OutlineSentryLogger.isSentryInitialized() {
       if !self.breadcrumbQueue.isEmpty {
-        self.drainBreadcrumbQueue(sentryClient)
+        self.drainBreadcrumbQueue()
       }
-      sentryClient.breadcrumbs.add(breadcrumb)
+      SentrySDK.addBreadcrumb(crumb: breadcrumb)
     } else {
       // Sentry has not been initialized yet. Add breadcrumb to queue.
       self.breadcrumbQueue.append(breadcrumb)
     }
   }
 
-  private func ddLogLevelToSentrySeverity(_ level: DDLogLevel) -> SentrySeverity {
+  static func isSentryInitialized() -> Bool {
+    return SentrySDK.currentHub().getClient() != nil;
+  }
+
+  private func ddLogLevelToSentryLevel(_ level: DDLogLevel) -> SentryLevel {
     switch level {
     case .error:
       return .error
@@ -85,16 +89,16 @@ class OutlineSentryLogger: DDAbstractLogger {
     }
   }
 
-  private func drainBreadcrumbQueue(_ sentryClient: Client) {
+  private func drainBreadcrumbQueue() {
     for breadcrumb in self.breadcrumbQueue {
-      sentryClient.breadcrumbs.add(breadcrumb)
+      SentrySDK.addBreadcrumb(crumb: breadcrumb)
     }
     self.breadcrumbQueue.removeAll()
   }
 
   // Reads VpnExtension logs and adds them to Sentry as breadcrumbs.
   func addVpnExtensionLogsToSentry() {
-    guard let sentryClient = Client.shared else {
+    if !OutlineSentryLogger.isSentryInitialized() {
       DDLogWarn("Sentry client not initialized.")
       return
     }
@@ -110,11 +114,8 @@ class OutlineSentryLogger: DDAbstractLogger {
     dateFormatter.dateFormat = OutlineSentryLogger.kDateFormat
     // Breadcrumbs come from the application and VpnExtension processes. There is a limit to how
     // many we send, definied in OutlinePlugin.kMaxBreadcrumbs.
-    // Set the number of breadcrumbs for the VPN process to the maximum of an even split of the
-    // total breadcrumbs and the remaining breadcrumbs.
-    let maxNumVpnExtensionBreadcrumbs = max(
-        OutlinePlugin.kMaxBreadcrumbs / 2,
-        OutlinePlugin.kMaxBreadcrumbs - sentryClient.breadcrumbs.count());
+    // Set the number of breadcrumbs for the VPN process to half of the maximum breadcrumbs.
+    let maxNumVpnExtensionBreadcrumbs = OutlinePlugin.kMaxBreadcrumbs / 2
     var numBreadcrumbsAdded: UInt = 0
     // Log files are named by date, get the most recent.
     for logFile in logs.sorted().reversed() {
@@ -132,7 +133,7 @@ class OutlineSentryLogger: DDAbstractLogger {
             let breadcrumb = Breadcrumb(level: .info, category: "VpnExtension")
             breadcrumb.timestamp = dateFormatter.date(from: timestamp)
             breadcrumb.message = message
-            sentryClient.breadcrumbs.add(breadcrumb)
+            SentrySDK.addBreadcrumb(crumb: breadcrumb)
             numBreadcrumbsAdded += 1
           }
         }

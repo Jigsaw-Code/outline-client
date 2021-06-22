@@ -149,18 +149,22 @@ class OutlinePlugin: CDVPlugin {
     guard let apiKey = command.argument(at: 0) as? String else {
       return sendError("Missing error reporting API key.", callbackId: command.callbackId)
     }
-    do {
-      Client.shared = try Client(dsn: apiKey)
-      try Client.shared?.startCrashHandler()
-      Client.shared?.breadcrumbs.maxBreadcrumbs = OutlinePlugin.kMaxBreadcrumbs;
-      sendSuccess(true, callbackId: command.callbackId)
-    } catch let error {
-      sendError("Failed to init error reporting: \(error)", callbackId: command.callbackId)
+
+    SentrySDK.start { options in
+      options.dsn = apiKey
+      options.maxBreadcrumbs = OutlinePlugin.kMaxBreadcrumbs
+      options.beforeSend = { event in
+        // Remove user and device identifiers.
+        event.context?["app"]?["device_app_hash"] = ""
+        event.user?.userId = ""
+        return event
+      }
     }
+    sendSuccess(true, callbackId: command.callbackId)
   }
 
   func reportEvents(_ command: CDVInvokedUrlCommand) {
-    guard Client.shared != nil else {
+    if !OutlineSentryLogger.isSentryInitialized() {
       sendError("Failed to report events. Sentry not initialized.", callbackId: command.callbackId)
       return
     }
@@ -173,7 +177,7 @@ class OutlinePlugin: CDVPlugin {
     } else {
       uuid = NSUUID().uuidString
     }
-    event.message = "\(OutlinePlugin.kPlatform) report (\(uuid))"
+    event.message = SentryMessage(formatted: "\(OutlinePlugin.kPlatform) report (\(uuid))")
 
     // Remove device identifier, timezone, and memory stats. Note that we cannot use the
     // beforeSerializeEvent callback, since contexts are only added after serialization
@@ -194,15 +198,14 @@ class OutlinePlugin: CDVPlugin {
     event.context?.deviceContext = deviceContext
 
     OutlineSentryLogger.sharedInstance.addVpnExtensionLogsToSentry()
-    Client.shared?.send(event: event) { (error) in
-      if error == nil {
-        self.sendSuccess(true, callbackId: command.callbackId)
-        Client.shared?.breadcrumbs.clear() // Breadcrumbs are persisted, clear on send success.
-      } else {
-        self.sendError("Failed to report event: \(String(describing: error))",
-                       callbackId: command.callbackId)
-      }
+    // As of sentry-cocoa 5.x, it's no longer possible to set a callback when sending an event,
+    // which means that we cannot determine whether the event has been sent successfully.
+    // See: https://github.com/getsentry/sentry-cocoa/issues/660
+    guard SentrySDK.capture(event: event) != SentryId.empty else {
+      self.sendError("Failed to report event", callbackId: command.callbackId)
+      return
     }
+    self.sendSuccess(true, callbackId: command.callbackId)
   }
 
 #if os(macOS)

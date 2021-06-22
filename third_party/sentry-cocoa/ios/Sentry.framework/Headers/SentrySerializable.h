@@ -1,20 +1,16 @@
-//
-//  SentrySerializable.h
-//  Sentry
-//
-//  Created by Daniel Griesser on 08/05/2017.
-//  Copyright © 2017 Sentry. All rights reserved.
-//
-
 #import <Foundation/Foundation.h>
+
+#import "SentryDefines.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol SentrySerializable <NSObject>
+SENTRY_NO_INIT
 
-- (instancetype)init NS_UNAVAILABLE;
-+ (instancetype)new NS_UNAVAILABLE;
-
+/**
+ * Serialize the contents of the object into an NSDictionary. Make to copy all properties of the
+ * original object so modifications to it don't have an impact on the serialized NSDictionary.
+ */
 - (NSDictionary<NSString *, id> *)serialize;
 
 @end
