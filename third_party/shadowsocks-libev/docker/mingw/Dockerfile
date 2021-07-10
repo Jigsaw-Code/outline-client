@@ -18,7 +18,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 
-FROM debian:testing
+FROM debian:buster
 
 ARG REPO=shadowsocks
 ARG REV=master
