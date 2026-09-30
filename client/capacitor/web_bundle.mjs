@@ -18,6 +18,7 @@ import url from 'url';
 
 import webpackConfig from './webpack.config.js';
 import {writeEnvironmentJson} from './write_environment.mjs';
+import {getWebpackBuildMode} from '../build/get_webpack_build_mode.mjs';
 import {runWebpack} from '../build/run_webpack.mjs';
 
 const capacitorDir = path.dirname(url.fileURLToPath(import.meta.url));
@@ -35,12 +36,14 @@ const SUPPORTED_PLATFORMS = new Set(['browser', 'android', 'ios']);
  * @param {string} parameters.buildMode
  * @param {string} parameters.versionName
  * @param {number} parameters.buildNumber
+ * @param {string | undefined} parameters.sentryDsn
  */
 export async function buildWebBundle({
   platform,
   buildMode,
   versionName,
   buildNumber,
+  sentryDsn,
 }) {
   if (!SUPPORTED_PLATFORMS.has(platform)) {
     throw new TypeError(
@@ -48,16 +51,30 @@ export async function buildWebBundle({
     );
   }
 
-  if (buildMode !== 'debug') {
-    throw new TypeError(
-      `Capacitor ${platform} build supports only debug mode, got "${buildMode}".`
-    );
+  if (buildMode === 'release') {
+    if (versionName === '0.0.0') {
+      throw new TypeError(
+        'Release builds require a valid versionName, but it is set to 0.0.0.'
+      );
+    }
+
+    if (!sentryDsn) {
+      throw new TypeError(
+        'Release builds require SENTRY_DSN, but it is not defined.'
+      );
+    }
+
+    try {
+      new URL(sentryDsn);
+    } catch {
+      throw new TypeError(`The sentryDsn ${sentryDsn} is not a valid URL!`);
+    }
   }
 
   const outputDir = path.resolve(capacitorDir, 'www');
   await fs.rm(outputDir, {recursive: true, force: true});
   await fs.mkdir(outputDir, {recursive: true});
 
-  await writeEnvironmentJson(capacitorDir, versionName, buildNumber);
-  await runWebpack({...webpackConfig, mode: 'development'});
+  await writeEnvironmentJson(capacitorDir, versionName, buildNumber, sentryDsn);
+  await runWebpack({...webpackConfig, mode: getWebpackBuildMode(buildMode)});
 }

@@ -38,14 +38,18 @@ The web build action accepts **`browser`** (default), **`ios`**, or **`android`*
 npm run action client/capacitor/web_build
 ```
 
-**Note:** The Capacitor browser build is **debug-only**. Passing `--buildMode=release` is rejected by `web_build.action.mjs`.
+**Release:** pass `--buildMode=release` and a version, with `SENTRY_DSN` set in the environment. This builds the bundle with webpack in production mode:
+
+```sh
+SENTRY_DSN=<dsn> npm run action client/capacitor/web_build android -- --buildMode=release --versionName=<version>
+```
 
 ### Output
 
 Artifacts land in **`client/capacitor/www/`**, including for example:
 
 - `index.html`, `bundle.js`
-- `environment.json` (version and build numbers)
+- `environment.json` (version and build numbers, and the Sentry DSN if set)
 - Copied assets: `messages/`, `assets/`, etc. (see `webpack.config.js`)
 
 ## App icons and splash screens

@@ -18,7 +18,8 @@ import path from 'path';
 export async function writeEnvironmentJson(
   capacitorDir,
   versionName,
-  buildNumber
+  buildNumber,
+  sentryDsn
 ) {
   const outputPath = path.resolve(capacitorDir, 'www', 'environment.json');
   await fs.mkdir(path.dirname(outputPath), {recursive: true});
@@ -26,6 +27,7 @@ export async function writeEnvironmentJson(
     outputPath,
     JSON.stringify(
       {
+        SENTRY_DSN: sentryDsn,
         APP_VERSION: versionName,
         APP_BUILD_NUMBER: String(buildNumber),
       },
