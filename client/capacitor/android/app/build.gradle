@@ -18,6 +18,22 @@ android {
     namespace "org.outline.client"
     compileSdk 36
 
+    // AGP strips the debug symbols from the native libraries it packages
+    // (tun2socks' libgojni.so, the Sentry native libs), but only when it can
+    // find this NDK's llvm-strip. Without the pin it ships the unstripped
+    // ~12MB-per-ABI libgojni.so. The unstripped copy survives in the tun2socks
+    // .aar, which is where upload_debug_symbols reads it for Sentry.
+    ndkVersion "28.2.13676358"
+
+    // 16KB page-size support: package native libraries uncompressed and
+    // page-aligned. This is the AGP default, set explicitly to guard against
+    // the packaging regressing to legacy behavior.
+    packaging {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
+
     defaultConfig {
         // Ship under the same package id as the existing Cordova client so the
         // Play Store delivers this as an in-place update. That is a hard
@@ -55,8 +71,12 @@ android {
             if (project.hasProperty('outlineKeystorePath')) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // The keep rules for our reflectively-instantiated, JNI and AIDL
+            // classes come from the consumer rules of OutlineAndroidLib and of
+            // capacitor-android.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     
