@@ -17,7 +17,7 @@ apply plugin: 'com.android.application'
 android {
     namespace "org.outline.client"
     compileSdk 36
-    
+
     defaultConfig {
         // Ship under the same package id as the existing Cordova client so the
         // Play Store delivers this as an in-place update. That is a hard
@@ -29,12 +29,32 @@ android {
         applicationId "org.outline.android.client"
         minSdk rootProject.ext.minSdkVersion
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        // Release builds get their version from client/capacitor/build.action.mjs,
+        // which passes it in as Gradle project properties.
+        versionCode((findProperty('outlineVersionCode') ?: 1) as Integer)
+        versionName(findProperty('outlineVersionName') ?: "1.0")
     }
-    
+
+    signingConfigs {
+        release {
+            // Only client/capacitor/build.action.mjs sets this, for release
+            // builds. The password is read from the environment so that it
+            // never shows up in the Gradle command line or the build logs.
+            if (project.hasProperty('outlineKeystorePath')) {
+                storeFile file(project.property('outlineKeystorePath'))
+                storeType 'pkcs12'
+                storePassword System.getenv('ANDROID_KEY_STORE_PASSWORD')
+                keyAlias 'privatekey'
+                keyPassword System.getenv('ANDROID_KEY_STORE_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (project.hasProperty('outlineKeystorePath')) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

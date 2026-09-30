@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
 import url from 'url';
 
 import {spawnStream} from '@outline/infrastructure/build/spawn_stream.mjs';
 
 import {buildWebBundle} from './web_bundle.mjs';
+import {buildUniversalApkSet} from '../build/android_universal_apk.mjs';
 import {getBuildParameters} from '../build/get_build_parameters.mjs';
 
 const capacitorDir = path.dirname(url.fileURLToPath(import.meta.url));
@@ -32,7 +35,8 @@ const CAPACITOR_PLATFORMS = ['android', 'ios'];
  */
 export async function main(...parameters) {
   const buildParameters = getBuildParameters(parameters);
-  const {platform, buildMode, verbose} = buildParameters;
+  const {platform, buildMode, verbose, versionName, buildNumber} =
+    buildParameters;
 
   if (!CAPACITOR_PLATFORMS.includes(platform)) {
     throw new TypeError(
@@ -40,11 +44,31 @@ export async function main(...parameters) {
     );
   }
 
-  // TODO: Support a release build once we're ready to migrate to Capacitor.
-  if (buildMode !== 'debug') {
+  // TODO: Support an iOS release build once we're ready to migrate to Capacitor.
+  if (buildMode === 'release' && platform !== 'android') {
     throw new TypeError(
       `Capacitor ${platform} build supports only debug mode, got "${buildMode}".`
     );
+  }
+
+  // Check the release signing inputs before the (slow) web and Go builds.
+  if (platform === 'android' && buildMode === 'release') {
+    if (!process.env.JAVA_HOME) {
+      throw new ReferenceError(
+        'JAVA_HOME must be defined in the environment to build an Android Release!'
+      );
+    }
+
+    if (
+      !(
+        process.env.ANDROID_KEY_STORE_PASSWORD &&
+        process.env.ANDROID_KEY_STORE_CONTENTS
+      )
+    ) {
+      throw new ReferenceError(
+        "Both 'ANDROID_KEY_STORE_PASSWORD' and 'ANDROID_KEY_STORE_CONTENTS' must be defined in the environment to build an Android Release!"
+      );
+    }
   }
 
   // Build the web bundle (client/capacitor/www/) that `cap sync` copies into
@@ -61,19 +85,28 @@ export async function main(...parameters) {
   process.chdir(capacitorDir);
   await spawnStream('npx', 'cap', 'sync', platform);
 
-  switch (platform) {
-    case 'android':
+  switch (platform + buildMode) {
+    case 'android' + 'debug':
       return androidDebug(verbose);
-    case 'ios':
+    case 'android' + 'release':
+      return androidRelease(
+        process.env.ANDROID_KEY_STORE_PASSWORD,
+        process.env.ANDROID_KEY_STORE_CONTENTS,
+        process.env.JAVA_HOME,
+        versionName,
+        buildNumber,
+        verbose
+      );
+    case 'ios' + 'debug':
       return iosDebug(verbose);
   }
 }
 
+const androidDir = path.resolve(capacitorDir, 'android');
+
 async function androidDebug(verbose) {
   // `cap build` only produces signed release builds, so invoke Gradle
   // directly for the debug APK — the same target `cap run` uses.
-  // TODO: Migrate to a release Gradle target once we have a production build.
-  const androidDir = path.resolve(capacitorDir, 'android');
   await spawnStream(
     path.join(androidDir, 'gradlew'),
     '-p',
@@ -81,6 +114,65 @@ async function androidDebug(verbose) {
     verbose ? '--info' : '--quiet',
     'assembleDebug'
   );
+}
+
+/**
+ * Builds the signed release AAB (for the Play Store) and, from it, Outline.zip:
+ * the bundletool archive holding the signed universal APK (for direct
+ * download). Both land in android/app/build/outputs/bundle/release/.
+ */
+async function androidRelease(
+  ksPassword,
+  ksContents,
+  javaPath,
+  versionName,
+  buildNumber,
+  verbose
+) {
+  // Decode the keystore into a private (0700) temp directory rather than the
+  // source tree, and remove it as soon as the build is done.
+  const keystoreDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'outline-android-keystore-')
+  );
+  const keystorePath = path.join(keystoreDir, 'keystore.p12');
+
+  try {
+    await fs.writeFile(keystorePath, Buffer.from(ksContents, 'base64'), {
+      mode: 0o600,
+    });
+
+    // app/build.gradle versions and signs the release from these properties.
+    // It reads the keystore password from ANDROID_KEY_STORE_PASSWORD in the
+    // environment, because spawnStream echoes the command line.
+    await spawnStream(
+      path.join(androidDir, 'gradlew'),
+      '-p',
+      androidDir,
+      verbose ? '--info' : '--quiet',
+      'bundleRelease',
+      `-PoutlineVersionName=${versionName}`,
+      `-PoutlineVersionCode=${buildNumber}`,
+      `-PoutlineKeystorePath=${keystorePath}`
+    );
+
+    const bundleDir = path.resolve(
+      androidDir,
+      'app',
+      'build',
+      'outputs',
+      'bundle',
+      'release'
+    );
+    await buildUniversalApkSet({
+      bundlePath: path.resolve(bundleDir, 'app-release.aab'),
+      outputDir: bundleDir,
+      keystorePath,
+      ksPassword,
+      javaPath,
+    });
+  } finally {
+    await fs.rm(keystoreDir, {recursive: true, force: true});
+  }
 }
 
 async function iosDebug(verbose) {

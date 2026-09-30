@@ -178,6 +178,22 @@ npm run action client/capacitor/build android
 
 This runs the full build: the web bundle, `cap sync android` (tun2socks + native sync), and `gradlew assembleDebug`. It is what CI runs. To also install and launch the app on a device, use the steps below instead.
 
+### Build the release
+
+From the **repository root**, with the signing keystore (a base64-encoded PKCS#12 file whose key alias is `privatekey`), its password, the Sentry DSN, and `JAVA_HOME` (JDK 21) in the environment:
+
+```sh
+SENTRY_DSN=<dsn> \
+ANDROID_KEY_STORE_CONTENTS=<base64 keystore> \
+ANDROID_KEY_STORE_PASSWORD=<password> \
+npm run action client/capacitor/build android -- --buildMode=release --versionName=<version>
+```
+
+This runs `gradlew bundleRelease` with the given version name, and the build number (hours since the Unix epoch) as the version code. It leaves two signed artifacts in `client/capacitor/android/app/build/outputs/bundle/release/`:
+
+- `app-release.aab`, for the Play Store.
+- `Outline.zip`, a [bundletool](https://developer.android.com/tools/bundletool) archive holding `universal.apk` for direct download. The build fails if its native libraries are not 16 KB aligned.
+
 ### Steps to build and start the app
 
 1. **Build the web bundle** (`www/`), from the **repository root**:
