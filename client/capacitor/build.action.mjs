@@ -44,14 +44,17 @@ export async function main(...parameters) {
     );
   }
 
-  // TODO: Support an iOS release build once we're ready to migrate to Capacitor.
-  if (buildMode === 'release' && platform !== 'android') {
-    throw new TypeError(
-      `Capacitor ${platform} build supports only debug mode, got "${buildMode}".`
-    );
+  // Check the release signing inputs before the (slow) web and Go builds.
+  if (platform === 'ios' && buildMode === 'release') {
+    // The app target has no development team of its own (see
+    // ios/App/App.xcodeproj), so a signed build needs one from the caller.
+    if (!process.env.DEVELOPMENT_TEAM) {
+      throw new ReferenceError(
+        'DEVELOPMENT_TEAM must be defined in the environment to build an iOS Release!'
+      );
+    }
   }
 
-  // Check the release signing inputs before the (slow) web and Go builds.
   if (platform === 'android' && buildMode === 'release') {
     if (!process.env.JAVA_HOME) {
       throw new ReferenceError(
@@ -99,6 +102,13 @@ export async function main(...parameters) {
       );
     case 'ios' + 'debug':
       return iosDebug(verbose);
+    case 'ios' + 'release':
+      return iosRelease(
+        process.env.DEVELOPMENT_TEAM,
+        versionName,
+        buildNumber,
+        verbose
+      );
   }
 }
 
@@ -175,31 +185,56 @@ async function androidRelease(
   }
 }
 
+const IOS_XCODE_BUILD_ARGS = [
+  '-project',
+  path.resolve(capacitorDir, 'ios', 'App', 'App.xcodeproj'),
+  '-scheme',
+  'Outline',
+  '-destination',
+  'generic/platform=iOS',
+];
+
 async function iosDebug(verbose) {
   // `cap build` only produces signed release builds, so invoke xcodebuild
   // directly for an unsigned debug build, the same way the Cordova iOS build
   // does (see client/src/cordova/build.action.mjs). Signing is disabled so the
   // build needs no development team or provisioning profile, which CI does not
   // have.
-  // TODO: Migrate to an archive once we have a production build.
   console.warn(
     'WARNING: building "ios" in [DEBUG] mode. Do not publish this build!!'
   );
   await spawnStream(
     'xcodebuild',
     'clean',
-    '-project',
-    path.resolve(capacitorDir, 'ios', 'App', 'App.xcodeproj'),
-    '-scheme',
-    'Outline',
-    '-destination',
-    'generic/platform=iOS',
+    ...IOS_XCODE_BUILD_ARGS,
     'build',
     '-configuration',
     'Debug',
     ...(verbose ? [] : ['-quiet']),
     'CODE_SIGN_IDENTITY=',
     'CODE_SIGNING_ALLOWED=NO'
+  );
+}
+
+/**
+ * Archives the signed release app. Like the Cordova iOS build, it passes no
+ * -archivePath, so the archive lands in Xcode's default Archives folder.
+ */
+async function iosRelease(teamId, versionName, buildNumber, verbose) {
+  await spawnStream(
+    'xcodebuild',
+    'clean',
+    ...IOS_XCODE_BUILD_ARGS,
+    'archive',
+    '-configuration',
+    'Release',
+    '-allowProvisioningUpdates',
+    ...(verbose ? [] : ['-quiet']),
+    // The Info.plist of the app and of the VpnExtension take their version
+    // from these build settings.
+    `MARKETING_VERSION=${versionName}`,
+    `CURRENT_PROJECT_VERSION=${buildNumber}`,
+    `DEVELOPMENT_TEAM=${teamId}`
   );
 }
 

@@ -105,6 +105,16 @@ npm run action client/capacitor/build ios
 
 This runs the full build: the web bundle, `cap sync ios` (tun2socks + native sync), and an **unsigned** `xcodebuild` of `ios/App/App.xcodeproj` for a generic iOS device. It is what CI runs. Because it disables code signing, the resulting app cannot be installed on a device; to run the app, use the steps below instead.
 
+### Build the release
+
+Releases are built and published by the scripts in [outline-release](https://github.com/OutlineFoundation/outline-release), which supply the Sentry DSN and the development team and call this action:
+
+```sh
+npm run action client/capacitor/build ios -- --buildMode=release --versionName=<version>
+```
+
+It reads `SENTRY_DSN` and `DEVELOPMENT_TEAM` from the environment, and needs that team's signing identity set up in Xcode. It runs `xcodebuild archive` with the given version and the build number (hours since the Unix epoch), and leaves the signed archive in Xcode's default Archives folder (`~/Library/Developer/Xcode/Archives`).
+
 ### Steps to build and start the app
 
 1. **Build the web bundle** (`www/`), from the **repository root**:
