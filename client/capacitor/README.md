@@ -180,19 +180,13 @@ This runs the full build: the web bundle, `cap sync android` (tun2socks + native
 
 ### Build the release
 
-From the **repository root**, with the signing keystore (a base64-encoded PKCS#12 file whose key alias is `privatekey`), its password, the Sentry DSN, and `JAVA_HOME` (JDK 21) in the environment:
+Releases are built and published by the scripts in [outline-release](https://github.com/OutlineFoundation/outline-release), which supply the signing keystore and the Sentry DSN and call this action:
 
 ```sh
-SENTRY_DSN=<dsn> \
-ANDROID_KEY_STORE_CONTENTS=<base64 keystore> \
-ANDROID_KEY_STORE_PASSWORD=<password> \
 npm run action client/capacitor/build android -- --buildMode=release --versionName=<version>
 ```
 
-This runs `gradlew bundleRelease` with the given version name, and the build number (hours since the Unix epoch) as the version code. It leaves two signed artifacts in `client/capacitor/android/app/build/outputs/bundle/release/`:
-
-- `app-release.aab`, for the Play Store.
-- `Outline.zip`, a [bundletool](https://developer.android.com/tools/bundletool) archive holding `universal.apk` for direct download. The build fails if its native libraries are not 16 KB aligned.
+It reads `SENTRY_DSN`, `ANDROID_KEY_STORE_CONTENTS` (a base64-encoded PKCS#12 keystore whose key alias is `privatekey`), `ANDROID_KEY_STORE_PASSWORD` and `JAVA_HOME` (JDK 21) from the environment. It leaves the signed `app-release.aab` and `Outline.zip`, a [bundletool](https://developer.android.com/tools/bundletool) archive holding `universal.apk`, in `client/capacitor/android/app/build/outputs/bundle/release/`.
 
 ### Steps to build and start the app
 
