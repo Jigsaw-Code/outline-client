@@ -113,7 +113,7 @@ Releases are built and published by the scripts in [outline-release](https://git
 npm run action client/capacitor/build ios -- --buildMode=release --versionName=<version>
 ```
 
-It reads `SENTRY_DSN` and `DEVELOPMENT_TEAM` from the environment, and needs that team's signing identity set up in Xcode. It runs `xcodebuild archive` with the given version and the build number (hours since the Unix epoch), and leaves the signed archive in Xcode's default Archives folder (`~/Library/Developer/Xcode/Archives`).
+It reads `SENTRY_DSN` and `DEVELOPMENT_TEAM` from the environment, and needs that team's signing identity set up in Xcode. It runs `xcodebuild archive` with the given version and the build number (hours since the Unix epoch), and leaves the signed archive at `output/client/ios/Outline.xcarchive`.
 
 ### Steps to build and start the app
 

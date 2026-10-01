@@ -17,6 +17,7 @@ import os from 'os';
 import path from 'path';
 import url from 'url';
 
+import {getRootDir} from '@outline/infrastructure/build/get_root_dir.mjs';
 import {spawnStream} from '@outline/infrastructure/build/spawn_stream.mjs';
 
 import {buildWebBundle} from './web_bundle.mjs';
@@ -217,15 +218,26 @@ async function iosDebug(verbose) {
 }
 
 /**
- * Archives the signed release app. Like the Cordova iOS build, it passes no
- * -archivePath, so the archive lands in Xcode's default Archives folder.
+ * Archives the signed release app to output/client/ios/Outline.xcarchive,
+ * replacing any previous archive there.
  */
 async function iosRelease(teamId, versionName, buildNumber, verbose) {
+  const archivePath = path.resolve(
+    getRootDir(),
+    'output',
+    'client',
+    'ios',
+    'Outline.xcarchive'
+  );
+  await fs.rm(archivePath, {recursive: true, force: true});
+
   await spawnStream(
     'xcodebuild',
     'clean',
     ...IOS_XCODE_BUILD_ARGS,
     'archive',
+    '-archivePath',
+    archivePath,
     '-configuration',
     'Release',
     '-allowProvisioningUpdates',
