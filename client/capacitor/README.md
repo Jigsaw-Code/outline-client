@@ -186,7 +186,7 @@ Releases are built and published by the scripts in [outline-release](https://git
 npm run action client/capacitor/build android -- --buildMode=release --versionName=<version>
 ```
 
-It reads `SENTRY_DSN`, `ANDROID_KEY_STORE_CONTENTS` (a base64-encoded PKCS#12 keystore whose key alias is `privatekey`), `ANDROID_KEY_STORE_PASSWORD` and `JAVA_HOME` (JDK 21) from the environment. It leaves the signed `app-release.aab` and `Outline.zip`, a [bundletool](https://developer.android.com/tools/bundletool) archive holding `universal.apk`, in `client/capacitor/android/app/build/outputs/bundle/release/`.
+It reads `SENTRY_DSN`, `ANDROID_KEY_STORE_CONTENTS` (a base64-encoded PKCS#12 keystore whose key alias is `privatekey`), `ANDROID_KEY_STORE_PASSWORD` and `JAVA_HOME` (JDK 21) from the environment. It leaves the signed `app-release.aab` and `universal.apk` (built from the AAB with [bundletool](https://developer.android.com/tools/bundletool), and checked for 16 KB alignment) in `client/capacitor/android/app/build/outputs/bundle/release/`.
 
 ### Steps to build and start the app
 

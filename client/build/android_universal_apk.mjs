@@ -72,13 +72,15 @@ async function verify16kAlignment(apkPath) {
 }
 
 /**
- * Turns a signed release AAB into `Outline.zip`: a bundletool `.apks` archive
- * holding the signed universal APK, verified to be 16 KB aligned.
+ * Builds the signed universal APK from a signed release AAB with bundletool,
+ * and verifies that it is 16 KB aligned. Leaves `universal.apk` in the output
+ * directory, along with `Outline.zip`, the bundletool `.apks` archive it was
+ * extracted from.
  *
  * @param {object} options
  * @param {string} options.bundlePath path to the release AAB.
- * @param {string} options.outputDir directory that receives `Outline.zip` (and
- *   the downloaded bundletool.jar).
+ * @param {string} options.outputDir directory that receives `universal.apk`
+ *   and `Outline.zip` (and the downloaded bundletool.jar).
  * @param {string} options.keystorePath path to the PKCS#12 signing keystore.
  * @param {string} options.ksPassword password of the keystore and its key.
  * @param {string} options.javaPath the JAVA_HOME of the JDK that runs bundletool.
@@ -132,23 +134,17 @@ export async function buildUniversalApkSet({
   }
 
   // The universal `.apks` archive is a zip holding `universal.apk`. Extract it
-  // and assert its native libraries are 16 KB aligned before we ship it.
-  const extractDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'outline-android-align-')
+  // next to the bundle, and assert its native libraries are 16 KB aligned
+  // before we ship it.
+  await spawnStream(
+    'unzip',
+    '-o',
+    outputPath,
+    'universal.apk',
+    '-d',
+    outputDir
   );
-  try {
-    await spawnStream(
-      'unzip',
-      '-o',
-      outputPath,
-      'universal.apk',
-      '-d',
-      extractDir
-    );
-    await verify16kAlignment(path.resolve(extractDir, 'universal.apk'));
-  } finally {
-    await fs.rm(extractDir, {recursive: true, force: true});
-  }
+  await verify16kAlignment(path.resolve(outputDir, 'universal.apk'));
 
   return fs.rename(outputPath, path.resolve(outputDir, 'Outline.zip'));
 }

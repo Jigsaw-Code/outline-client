@@ -117,9 +117,9 @@ async function androidDebug(verbose) {
 }
 
 /**
- * Builds the signed release AAB (for the Play Store) and, from it, Outline.zip:
- * the bundletool archive holding the signed universal APK (for direct
- * download). Both land in android/app/build/outputs/bundle/release/.
+ * Builds the signed release AAB (for the Play Store) and, from it, the signed
+ * universal APK (for direct download). Both land in
+ * android/app/build/outputs/bundle/release/.
  */
 async function androidRelease(
   ksPassword,
