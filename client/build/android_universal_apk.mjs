@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Build tooling shared by the Cordova (client/src/cordova/build.action.mjs)
+// and Capacitor (client/capacitor/build.action.mjs) Android release builds.
+// It lives here only while both exist: once the Cordova client is deleted,
+// merge it back into the Capacitor build.
+
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
