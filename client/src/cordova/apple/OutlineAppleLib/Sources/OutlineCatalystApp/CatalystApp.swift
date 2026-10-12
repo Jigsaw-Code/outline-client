@@ -43,13 +43,13 @@
 
             NotificationCenter.default.addObserver(forName: NSNotification.kVpnConnected,
                                                    object: nil,
-                                                   queue: nil)
+                                                   queue: .main)
             { _ in
                 appKitController._AppKitBridge_setConnectionStatus(.connected)
             }
             NotificationCenter.default.addObserver(forName: NSNotification.kVpnDisconnected,
                                                    object: nil,
-                                                   queue: nil)
+                                                   queue: .main)
             { _ in
                 appKitController._AppKitBridge_setConnectionStatus(.disconnected)
             }
