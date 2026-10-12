@@ -38,14 +38,18 @@ The web build action accepts **`browser`** (default), **`ios`**, or **`android`*
 npm run action client/capacitor/web_build
 ```
 
-**Note:** The Capacitor browser build is **debug-only**. Passing `--buildMode=release` is rejected by `web_build.action.mjs`.
+**Release:** pass `--buildMode=release` and a version, with `SENTRY_DSN` set in the environment. This builds the bundle with webpack in production mode:
+
+```sh
+SENTRY_DSN=<dsn> npm run action client/capacitor/web_build android -- --buildMode=release --versionName=<version>
+```
 
 ### Output
 
 Artifacts land in **`client/capacitor/www/`**, including for example:
 
 - `index.html`, `bundle.js`
-- `environment.json` (version and build numbers)
+- `environment.json` (version and build numbers, and the Sentry DSN if set)
 - Copied assets: `messages/`, `assets/`, etc. (see `webpack.config.js`)
 
 ## App icons and splash screens
@@ -173,6 +177,16 @@ npm run action client/capacitor/build android
 ```
 
 This runs the full build: the web bundle, `cap sync android` (tun2socks + native sync), and `gradlew assembleDebug`. It is what CI runs. To also install and launch the app on a device, use the steps below instead.
+
+### Build the release
+
+Releases are built and published by the scripts in [outline-release](https://github.com/OutlineFoundation/outline-release), which supply the signing keystore and the Sentry DSN and call this action:
+
+```sh
+npm run action client/capacitor/build android -- --buildMode=release --versionName=<version>
+```
+
+It reads `SENTRY_DSN`, `ANDROID_KEY_STORE_CONTENTS` (a base64-encoded PKCS#12 keystore whose key alias is `privatekey`), `ANDROID_KEY_STORE_PASSWORD` and `JAVA_HOME` (JDK 21) from the environment. It leaves the signed `app-release.aab` and `universal.apk` (built from the AAB with [bundletool](https://developer.android.com/tools/bundletool), and checked for 16 KB alignment) in `client/capacitor/android/app/build/outputs/bundle/release/`.
 
 ### Steps to build and start the app
 
