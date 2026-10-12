@@ -85,10 +85,20 @@ export function getBuildParameters(cliArguments) {
     versionName = '0.0.0',
     sentryDsn = process.env.SENTRY_DSN,
     arch = '',
+    // The build number identifies one build across everything that makes it
+    // up (the web bundle, the native app). An action that builds several of
+    // them parses it once and passes the value on, so that they all agree
+    // even when the build crosses an hour boundary.
+    buildNumber = Math.floor(Date.now() / MS_PER_HOUR),
   } = minimist(cliArguments);
 
   assertOneOf(platform, VALID_PLATFORMS, 'Platform');
   assertOneOf(buildMode, VALID_BUILD_MODES, 'Build mode');
+  if (!Number.isInteger(buildNumber) || buildNumber <= 0) {
+    throw new TypeError(
+      `Build number "${buildNumber}" is not valid. Must be a positive integer.`
+    );
+  }
   const build = resolveBuild(platform, arch);
 
   return {
@@ -98,7 +108,7 @@ export function getBuildParameters(cliArguments) {
     versionName:
       buildMode === 'release' ? versionName : `${versionName}-${buildMode}`,
     sentryDsn,
-    buildNumber: Math.floor(Date.now() / MS_PER_HOUR),
+    buildNumber,
     arch,
     goArch: build?.goArch,
     // The Taskfile parameterizes linux/windows tasks by arch

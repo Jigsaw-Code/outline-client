@@ -15,9 +15,9 @@
 import path from 'path';
 import url from 'url';
 
-import {runAction} from '@outline/infrastructure/build/run_action.mjs';
 import {spawnStream} from '@outline/infrastructure/build/spawn_stream.mjs';
 
+import {buildWebBundle} from './web_bundle.mjs';
 import {getBuildParameters} from '../build/get_build_parameters.mjs';
 
 const capacitorDir = path.dirname(url.fileURLToPath(import.meta.url));
@@ -31,7 +31,8 @@ const CAPACITOR_PLATFORMS = ['android', 'ios'];
  * @param {string[]} parameters
  */
 export async function main(...parameters) {
-  const {platform, buildMode, verbose} = getBuildParameters(parameters);
+  const buildParameters = getBuildParameters(parameters);
+  const {platform, buildMode, verbose} = buildParameters;
 
   if (!CAPACITOR_PLATFORMS.includes(platform)) {
     throw new TypeError(
@@ -48,7 +49,7 @@ export async function main(...parameters) {
 
   // Build the web bundle (client/capacitor/www/) that `cap sync` copies into
   // the native project.
-  await runAction('client/capacitor/web_build', ...parameters);
+  await buildWebBundle(buildParameters);
 
   // `cap sync` first runs the capacitor:sync:before hook (see package.json in
   // this directory), which builds the tun2socks native library for the
