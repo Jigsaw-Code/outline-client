@@ -39,7 +39,6 @@ import androidx.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -483,7 +482,11 @@ public class VpnTunnelService extends VpnService {
     // Always call startForeground before any early return. Android 8+ requires that a service
     // started via startForegroundService() calls startForeground() within 5 seconds, regardless
     // of the code path taken. Requires android.permission.FOREGROUND_SERVICE since Android P.
-    startForegroundWithNotification(serverName);
+    if (!startForegroundWithNotification(serverName)) {
+      LOG.severe("Failed to start the service in the foreground, aborting auto-connect.");
+      abortAutoConnect();
+      return;
+    }
 
     if (tunnel == null) {
       LOG.info("Last successful tunnel not found. User not connected at shutdown/install.");
@@ -552,8 +555,12 @@ public class VpnTunnelService extends VpnService {
 
   // Foreground service & notifications
 
-  /** Starts the service in the foreground and displays a persistent notification. */
-  private void startForegroundWithNotification(final String serverName) {
+  /**
+   * Starts the service in the foreground and displays a persistent notification.
+   *
+   * @return whether the service was successfully moved to the foreground.
+   */
+  private boolean startForegroundWithNotification(final String serverName) {
     try {
       if (notificationBuilder == null) {
         // Cache the notification builder so we can update the existing notification - creating a
@@ -563,11 +570,13 @@ public class VpnTunnelService extends VpnService {
       notificationBuilder.setContentText(getStringResource("connected_server_state"));
 
       // We must specify the service type for security reasons: https://developer.android.com/about/versions/14/changes/fgs-types-required
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        startForeground(NOTIFICATION_SERVICE_ID, notificationBuilder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED);
-      }
+      // minSdk is 29 (Q), so the typed overload is always available.
+      startForeground(NOTIFICATION_SERVICE_ID, notificationBuilder.build(),
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED);
+      return true;
     } catch (Exception e) {
-      LOG.warning("Unable to display persistent notification");
+      LOG.log(Level.SEVERE, "Unable to start the service in the foreground", e);
+      return false;
     }
   }
 
@@ -591,7 +600,7 @@ public class VpnTunnelService extends VpnService {
 
   /** Returns a notification builder with the provided server name. */
   @NonNull
-  private Notification.Builder getNotificationBuilder(final String serverName) throws Exception {
+  private Notification.Builder getNotificationBuilder(final String serverName) {
     // HACK: tapping the notification opens whatever the host app's launcher activity is, because
     // this library has no way to know the app's activity class. The Cordova and Capacitor apps
     // name it differently (org.outline.android.client.MainActivity vs.
@@ -602,11 +611,18 @@ public class VpnTunnelService extends VpnService {
     // app's launcher activity.
     // TODO: once the Cordova app is deleted, drop this and open org.outline.client.MainActivity
     // directly.
-    Intent launchIntent = Objects.requireNonNull(
-        getPackageManager().getLaunchIntentForPackage(getPackageName()),
-        "no launcher activity");
-    PendingIntent mainActivityIntent = PendingIntent.getActivity(
-        this, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    //
+    // The notification is required to keep the service in the foreground, so a missing launcher
+    // activity must not prevent it from being built: fall back to a notification without a tap
+    // action.
+    PendingIntent mainActivityIntent = null;
+    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+    if (launchIntent != null) {
+      mainActivityIntent = PendingIntent.getActivity(
+          this, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    } else {
+      LOG.warning("No launcher activity found; notification will have no tap action.");
+    }
 
     Notification.Builder builder;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -618,12 +634,14 @@ public class VpnTunnelService extends VpnService {
     } else {
       builder = new Notification.Builder(this);
     }
-    try {
-      // TODO(fortuna): use R.drawable.small_icon instead. Needs moving resource from plugin to OutlineAndroidLib.
-      builder.setSmallIcon(getResourceId("small_icon", "drawable"));
-    } catch (Exception e) {
-      LOG.warning("Failed to retrieve the resource ID for the notification icon.");
+    // A small icon is mandatory for foreground notifications; startForeground() fails without one.
+    // TODO(fortuna): use R.drawable.small_icon instead. Needs moving resource from plugin to OutlineAndroidLib.
+    int smallIconId = getResourceId("small_icon", "drawable");
+    if (smallIconId == 0) {
+      LOG.warning("Failed to retrieve the resource ID for the notification icon, using fallback.");
+      smallIconId = android.R.drawable.ic_lock_lock;
     }
+    builder.setSmallIcon(smallIconId);
     return builder.setContentTitle(serverName)
         .setColor(NOTIFICATION_COLOR)
         .setVisibility(Notification.VISIBILITY_SECRET) // Don't display in lock screen
