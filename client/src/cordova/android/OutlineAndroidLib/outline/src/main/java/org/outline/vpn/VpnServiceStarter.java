@@ -48,7 +48,8 @@ public class VpnServiceStarter extends BroadcastReceiver {
     // revoked, or granted to another VPN app), don't start the service: once
     // startForegroundService() is called, Android requires the service to call startForeground()
     // in time, and the service would immediately abort anyway. Clear the stale status instead.
-    if (VpnService.prepare(context) != null) {
+    final boolean vpnConsentGranted = VpnService.prepare(context) == null;
+    if (!AutoStartPolicy.shouldStartService(wasConnectedAtShutdown, vpnConsentGranted)) {
       tunnelStore.setTunnelStatus(VpnTunnelService.TunnelStatus.DISCONNECTED);
       return;
     }
