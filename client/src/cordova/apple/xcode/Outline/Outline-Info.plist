@@ -55,6 +55,9 @@
 	<string></string>
 	<key>NSMainNibFile~ipad</key>
 	<string></string>
+	<!-- Keep the macOS menu bar controls available after the last window closes. -->
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>CDVLaunchScreen</string>
 	<key>UIRequiresFullScreen</key>

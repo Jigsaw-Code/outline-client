@@ -25,6 +25,7 @@ public enum ConnectionStatus: Int {
 var StatusItem = NSStatusItem()
 
 class StatusItemController: NSObject {
+    private var isQuitting = false
     let connectDisconnectMenuItem = NSMenuItem(title: MenuTitle.connect,
                                                action: #selector(toggleVpnConnection),
                                                keyEquivalent: "c")
@@ -72,7 +73,7 @@ class StatusItemController: NSObject {
         connectDisconnectMenuItem.target = self
         menu.addItem(connectDisconnectMenuItem)
         menu.addItem(NSMenuItem.separator())
-        let closeMenuItem = NSMenuItem(title: MenuTitle.quit, action: #selector(closeApplication), keyEquivalent: "q")
+        let closeMenuItem = NSMenuItem(title: MenuTitle.quit, action: #selector(closeApplication), keyEquivalent: "")
         closeMenuItem.target = self
         menu.addItem(closeMenuItem)
         StatusItem.menu = menu
@@ -92,36 +93,93 @@ class StatusItemController: NSObject {
 
     @objc func openApplication(_: AnyObject?) {
         NSLog("[StatusItemController] Opening application")
-        NSApp.activate(ignoringOtherApps: true)
-        guard let uiWindow = getUiWindow() else {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.unhide(nil)
+        if let window = NSApp.windows.first(where: { $0.className == "UINSWindow" }) {
+            window.makeKeyAndOrderFront(self)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
-        NSApp.setActivationPolicy(.regular)
-        uiWindow.makeKeyAndOrderFront(self)
-        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        // If Catalyst discarded the window, ask it to restore the scene.
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration)
+    }
+
+    func connectOnLogin() {
+        Task { @MainActor in
+            do {
+                guard let manager = try await NETunnelProviderManager.loadAllFromPreferences().first,
+                    !isQuitting, manager.isEnabled, manager.isOnDemandEnabled,
+                    manager.connection.status == .disconnected else { return }
+                try manager.connection.startVPNTunnel()
+            } catch {
+                NSLog("[StatusItemController] Login connection failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     @objc func closeApplication(_: AnyObject?) {
-        NSLog("[StatusItemController] Closing application")
-        NotificationCenter.default.post(name: Notification.Name("appQuit"), object: nil)
-        NSApplication.shared.terminate(self)
+        guard !isQuitting else { return }
+        isQuitting = true
+        Task { @MainActor in
+            do {
+                if let manager = try await NETunnelProviderManager.loadAllFromPreferences().first {
+                    try await disconnect(manager)
+                }
+                NSApplication.shared.terminate(self)
+            } catch {
+                isQuitting = false
+                NSLog("[StatusItemController] Unable to disconnect before quitting: \(error.localizedDescription)")
+                let alert = NSAlert(error: error)
+                alert.runModal()
+            }
+        }
     }
-    
+
+    private func disconnect(_ manager: NETunnelProviderManager) async throws {
+        var preferenceError: Error?
+        do {
+            try await manager.loadFromPreferences()
+            manager.isOnDemandEnabled = false
+            try await manager.saveToPreferences()
+        } catch {
+            preferenceError = error
+        }
+        // Honor Disconnect even if disabling automatic reconnect failed.
+        manager.connection.stopVPNTunnel()
+        if let preferenceError {
+            // Report the failure and keep Quit from exiting with on-demand still enabled.
+            throw preferenceError
+        }
+        // Wait for the system extension, but keep the app available on failure.
+        for _ in 0..<100 {
+            if manager.connection.status == .disconnected || manager.connection.status == .invalid {
+                return
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        throw NSError(domain: NSPOSIXErrorDomain, code: Int(ETIMEDOUT),
+            userInfo: [NSLocalizedDescriptionKey: NSLocalizedString(
+                "Outline could not disconnect the VPN. Please try again before quitting.",
+                comment: "Shown when quitting cannot finish disconnecting the VPN.")])
+    }
+
     @objc func toggleVpnConnection(_ sender: NSMenuItem) {
+        guard !isQuitting else { return }
         NSLog("[StatusItemController] Toggle VPN connection")
         
-        Task {
+        Task { @MainActor in
             let managers = try? await NETunnelProviderManager.loadAllFromPreferences()
             
             // Early return if no VPN profile exists
             guard let managers = managers, !managers.isEmpty else {
                 NSLog("[StatusItemController] No VPN profile found, opening app")
-                DispatchQueue.main.async {
-                    self.openApplication(nil)
-                }
+                self.openApplication(nil)
                 return
             }
             
+            guard !isQuitting else { return }
             guard let manager = managers.first else {
                 NSLog("[StatusItemController] Failed to get VPN manager")
                 return
@@ -138,37 +196,22 @@ class StatusItemController: NSObject {
                 } catch {
                     NSLog("[StatusItemController] Failed to connect VPN: \(error.localizedDescription)")
                     // If connection fails, open the app
-                    DispatchQueue.main.async {
-                        self.openApplication(nil)
-                    }
+                    self.openApplication(nil)
                 }
             } else {
                 // User clicked "Disconnect" - attempt to disconnect regardless of current state
                 NSLog("[StatusItemController] Disconnecting VPN")
                 
-                // Disable on-demand rules to prevent automatic reconnection, this automatically gets re-enabled if the user clicks the connect button again (regardless of app or menubar)
                 do {
-                    try await manager.loadFromPreferences()
-                    manager.isOnDemandEnabled = false
-                    try await manager.saveToPreferences()
-                    NSLog("[StatusItemController] Disabled on-demand rules")
+                    try await disconnect(manager)
                 } catch {
-                    NSLog("[StatusItemController] Failed to disable on-demand rules: \(error.localizedDescription)")
+                    NSLog("[StatusItemController] Failed to disconnect VPN: \(error.localizedDescription)")
+                    let alert = NSAlert(error: error)
+                    alert.runModal()
                 }
-                
-                manager.connection.stopVPNTunnel()
             }
         }
     }
-}
-
-private func getUiWindow() -> NSWindow? {
-    for window in NSApp.windows {
-        if String(describing: window).contains("UINSWindow") {
-            return window
-        }
-    }
-    return nil
 }
 
 private func getImage(name: String) -> NSImage {

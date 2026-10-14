@@ -18,12 +18,22 @@ import ServiceManagement
 class AppKitController: NSObject {
     private var statusItemController: StatusItemController?
     private var windowCloseObserver: NSObjectProtocol?
+    private var backgroundLaunch = false
 
     override public required init() {
         super.init()
 
-        // Indicates that the application is an ordinary app that appears in the Dock and may have a user interface.
-        NSApp.setActivationPolicy(.regular)
+        let launchReason = NSAppleEventManager.shared().currentAppleEvent?
+            .paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue
+        backgroundLaunch = launchReason == keyAELaunchedAsLogInItem
+        NSApp.setActivationPolicy(backgroundLaunch ? .accessory : .regular)
+        if backgroundLaunch {
+            // Catalyst can create its window after AppKit finishes launching.
+            NotificationCenter.default.addObserver(self, selector: #selector(hideLoginWindow(_:)),
+                name: NSWindow.didUpdateNotification, object: nil)
+        }
+        NotificationCenter.default.addObserver(self, selector: #selector(hideApplication),
+            name: Notification.Name("outlineHideWindow"), object: nil)
         
         // Set up window close observer to hide Dock icon when main window is closed
         setupWindowCloseObserver()
@@ -33,8 +43,7 @@ class AppKitController: NSObject {
         if let observer = windowCloseObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        NotificationCenter.default.removeObserver(
-            self, name: NSApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func setupWindowCloseObserver() {
@@ -62,15 +71,31 @@ class AppKitController: NSObject {
     }
 
     @objc private func appDidBecomeActive() {
-        // Show Dock icon when app becomes active
-        showDockIcon()
+        // A menu bar click must not bring the Dock icon back by itself.
+        if !backgroundLaunch && NSApp.windows.contains(where: { isMainUiWindow($0) && $0.isVisible }) {
+            showDockIcon()
+        }
+    }
+
+    @objc private func hideLoginWindow(_ notification: Notification) {
+        guard backgroundLaunch, let window = notification.object as? NSWindow,
+            isMainUiWindow(window), window.isVisible else { return }
+        backgroundLaunch = false
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didUpdateNotification, object: nil)
+        hideApplication()
+        statusItemController?.connectOnLogin()
+    }
+
+    @objc private func hideApplication() {
+        NSApp.hide(nil)
+        hideDockIcon()
     }
 
     private func hideDockIcon() {
         // Hide the Dock icon when the main window is closed.
         //
-        // This is only triggered by NSWindow.willCloseNotification, never by
-        // didResignActive: switching to .accessory deactivates the app and sends
+        // Only hide for a window close, an explicit hide, or a login launch;
+        // never on didResignActive: switching to .accessory deactivates the app and sends
         // its window behind other apps. During launch the main UINSWindow isn't
         // reliably visible yet, so hiding on an early resign-active made the
         // window "disappear" behind other windows.

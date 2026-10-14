@@ -38,4 +38,26 @@
   return YES;
 }
 
+#if TARGET_OS_MACCATALYST
+- (void)buildMenuWithBuilder:(id<UIMenuBuilder>)builder {
+  [super buildMenuWithBuilder:builder];
+  if (builder.system != UIMenuSystem.mainSystem) {
+    return;
+  }
+  // Keep Command-Q as a window-only action. The status menu owns service Quit.
+  NSString *title = [builder menuForIdentifier:UIMenuHide].children.firstObject.title;
+  UIKeyCommand *hide = [UIKeyCommand commandWithTitle:title ?: @"Hide Outline"
+      image:nil action:@selector(hideOutlineWindow:) input:@"q"
+      modifierFlags:UIKeyModifierCommand propertyList:nil];
+  [builder replaceChildrenOfMenuForIdentifier:UIMenuQuit
+      fromChildrenBlock:^NSArray<UIMenuElement *> *(NSArray<UIMenuElement *> *children) {
+        return @[hide];
+      }];
+}
+
+- (void)hideOutlineWindow:(id)sender {
+  [NSNotificationCenter.defaultCenter postNotificationName:@"outlineHideWindow" object:nil];
+}
+#endif
+
 @end
