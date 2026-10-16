@@ -53,14 +53,15 @@ export class RootHeader extends LitElement {
   render() {
     return html`<header>
       ${this.showBackButton
-        ? html`<md-icon-button @click=${this.returnHome}>
+        ? html`<md-icon-button aria-label="Back" @click=${this.returnHome}>
             <md-icon>arrow_back</md-icon>
           </md-icon-button>`
-        : html`<md-icon-button @click=${this.openNavigation}>
+        : html`<md-icon-button aria-label="Menu" @click=${this.openNavigation}>
             <md-icon>menu</md-icon>
           </md-icon-button>`}
       <h1>${this.title || 'Outline'}</h1>
       <md-icon-button
+        aria-label="Add server"
         class=${classMap({hidden: !this.showAddButton})}
         @click=${this.openAddAccessKey}
       >

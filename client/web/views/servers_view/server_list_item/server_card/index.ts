@@ -313,7 +313,7 @@ export class ServerCard extends LitElement implements ServerListItemElement {
             </div>
           </div>
         </div>
-        <md-icon-button class="card-menu-button" @click=${this.openMenu}>
+        <md-icon-button aria-label="Server options" class="card-menu-button" @click=${this.openMenu}>
           <md-icon>more_vert</md-icon>
         </md-icon-button>
         <footer class="card-footer">

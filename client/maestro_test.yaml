@@ -1,0 +1,43 @@
+appId: org.outline.android.client
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "GOT IT"
+    timeout: 10000
+- tapOn: "GOT IT"
+
+# Add first server
+- tapOn: "Paste access key here"
+- inputText: "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTp0ZXN0@192.168.1.1:1234#TestServer1"
+- tapOn: "Confirm"
+- waitForAnimationToEnd
+
+# Add second server
+- tapOn: "Add server"
+- tapOn: "Paste access key here"
+- inputText: "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTp0ZXN0@192.168.1.2:1234#TestServer2"
+- tapOn: "Confirm"
+- waitForAnimationToEnd
+
+# Delete the First Server
+# - tapOn:
+#     rightOf: "server-name"
+# - extendedWaitUntil:
+#     visible: "Forget" # The menu option to delete the server
+#     timeout: 2000
+# - tapOn: "Forget"
+# - waitForAnimationToEnd
+
+# Check App Version in About Page
+# Open the side drawer by tapping the hamburger menu
+- tapOn: "Menu"
+- extendedWaitUntil:
+    visible: "About"
+    timeout: 2000
+- tapOn: "About"
+- waitForAnimationToEnd
+# The about page displays the version, e.g., "Version 1.13.0".
+# Since the version changes, we assert that a text containing "Version" is visible.
+- assertVisible: "Version .*"
+- tapOn: "Back"
