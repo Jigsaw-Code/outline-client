@@ -59,7 +59,7 @@ export interface TunnelConfigJson {
 /**
  * ConnectionType specifies how the config connects to the internet
  * keep this type in sync with
- * go/outline/configregistry/types.go#ConnType
+ * go/outline/configregistry/connection_info.go#ConnType
  */
 export enum ConnectionType {
   TUNNELED = 'tunneled',

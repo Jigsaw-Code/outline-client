@@ -27,29 +27,39 @@ import (
 	"strings"
 	"time"
 
-	"localhost/client/go/configyaml"
-	"golang.getoutline.org/sdk/transport"
 	persistentcookiejar "go.nhat.io/cookiejar"
+	"golang.getoutline.org/sdk/transport"
+	"localhost/client/go/composer"
 )
 
 type HTTPRequestConfig struct {
 	URL     string
-	Method  string
-	Headers map[string][]string
-	Body    string
+	Method  composer.Optional[string]
+	Headers composer.Optional[map[string][]string]
+	Body    composer.Optional[string]
 }
 
 // HTTPReporterConfig is the format for the HTTPReporter config.
 type HTTPReporterConfig struct {
-	Request        HTTPRequestConfig
-	Interval       string
-	Enable_Cookies bool
+	Request       HTTPRequestConfig
+	Interval      composer.Optional[string]
+	EnableCookies composer.Optional[bool]
+
+	cookiesFilename string
+	interval        time.Duration
 }
 
-func NewHTTPReporterConfigParser(cookiesFilename string, streamDialer transport.StreamDialer) func(ctx context.Context, input map[string]any) (Reporter, error) {
-	return func(ctx context.Context, input map[string]any) (Reporter, error) {
+// Config is a parsed reporting strategy that can build a Reporter.
+type Config interface {
+	NewReporter(streamDialer transport.StreamDialer) (Reporter, error)
+}
+
+// NewHTTPReporterConfigParser returns a side-effect-free parser for
+// [HTTPReporterConfig]. Runtime resources are created by Config.NewReporter.
+func NewHTTPReporterConfigParser(cookiesFilename string) composer.ParseFunc[Config] {
+	return func(ctx context.Context, node composer.Node) (Config, error) {
 		var config HTTPReporterConfig
-		if err := configyaml.MapToAny(input, &config); err != nil {
+		if err := node.Decode(&config); err != nil {
 			return nil, fmt.Errorf("invalid config format: %w", err)
 		}
 
@@ -57,69 +67,74 @@ func NewHTTPReporterConfigParser(cookiesFilename string, streamDialer transport.
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the report collector URL: %w", err)
 		}
-
-		// Create HTTP Client.
-
-		httpClient := &http.Client{
-			Transport: &http.Transport{
-				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					if strings.HasPrefix(network, "tcp") {
-						return streamDialer.DialStream(ctx, addr)
-					} else {
-						return nil, fmt.Errorf("protocol not supported: %v", network)
-					}
-				},
-			},
+		config.cookiesFilename = cookiesFilename
+		if config.EnableCookies.Or(false) && cookiesFilename == "" {
+			return nil, fmt.Errorf("cookies filename is required for cookies: %w", errors.ErrUnsupported)
 		}
-
-		if config.Enable_Cookies {
-			if cookiesFilename == "" {
-				return nil, fmt.Errorf("cookies filename is required for cookies: %w", errors.ErrUnsupported)
-			}
-			// Make sure the cookies directory exists.
-			if err := os.MkdirAll(path.Dir(cookiesFilename), 0700); err != nil {
-				return nil, fmt.Errorf("failed to create service data directory: %v", err)
-			}
-			cookieJar := persistentcookiejar.NewPersistentJar(
-				persistentcookiejar.WithFilePath(cookiesFilename),
-				persistentcookiejar.WithAutoSync(true))
-			httpClient.Jar = cookieJar
-		}
-
-		// Create request factory.
-
-		newRequest := func() (*http.Request, error) {
-			method := config.Request.Method
-			if method == "" {
-				method = "POST"
-			}
-			var body io.Reader
-			if config.Request.Body != "" {
-				body = strings.NewReader(config.Request.Body)
-			}
-			req, err := http.NewRequest(method, config.Request.URL, body)
-			if err != nil {
-				return nil, err
-			}
-			for k, v := range config.Request.Headers {
-				req.Header[k] = v
-			}
-			return req, nil
-		}
-
-		reporter := &HTTPReporter{NewRequest: newRequest, HttpClient: httpClient}
-
-		if config.Interval != "" {
-			interval, err := time.ParseDuration(config.Interval)
+		if interval, ok := config.Interval.Get(); ok && interval != "" {
+			d, err := time.ParseDuration(interval)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse interval: %w", err)
 			}
-			if interval < 1*time.Hour {
+			if d < time.Hour {
 				return nil, fmt.Errorf("interval must be at least 1h")
 			}
-			reporter.Interval = interval
+			config.interval = d
 		}
-
-		return reporter, nil
+		return &config, nil
 	}
+}
+
+// NewReporter builds the runtime HTTP reporter.
+func (config *HTTPReporterConfig) NewReporter(streamDialer transport.StreamDialer) (Reporter, error) {
+	// Create HTTP Client.
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				if strings.HasPrefix(network, "tcp") {
+					return streamDialer.DialStream(ctx, addr)
+				}
+				return nil, fmt.Errorf("protocol not supported: %v", network)
+			},
+		},
+	}
+
+	if config.EnableCookies.Or(false) {
+		// Make sure the cookies directory exists.
+		if err := os.MkdirAll(path.Dir(config.cookiesFilename), 0700); err != nil {
+			return nil, fmt.Errorf("failed to create service data directory: %v", err)
+		}
+		cookieJar := persistentcookiejar.NewPersistentJar(
+			persistentcookiejar.WithFilePath(config.cookiesFilename),
+			persistentcookiejar.WithAutoSync(true))
+		httpClient.Jar = cookieJar
+	}
+
+	// Create request factory.
+
+	newRequest := func() (*http.Request, error) {
+		method := config.Request.Method.Or("")
+		if method == "" {
+			method = http.MethodPost
+		}
+		var body io.Reader
+		if b, ok := config.Request.Body.Get(); ok {
+			body = strings.NewReader(b)
+		}
+		req, err := http.NewRequest(method, config.Request.URL, body)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range config.Request.Headers.Or(nil) {
+			req.Header[k] = v
+		}
+		return req, nil
+	}
+
+	return &HTTPReporter{
+		NewRequest: newRequest,
+		Interval:   config.interval,
+		HttpClient: httpClient,
+	}, nil
 }

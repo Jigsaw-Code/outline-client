@@ -55,7 +55,7 @@ export async function establishVpn(tsRequest: StartRequestJson) {
       ipAddress: '10.0.85.5',
 
       // A "fake" local DNS resolver. Outline will intercept the real resolver at this address.
-      // Must align with: client/go/outline/configregistry/outline_dns_intercept.go
+      // Must align with: client/go/outline/configregistry/outline_dns.go
       dnsLinkLocalAddress: '169.254.113.53',
 
       // Outline magic numbers, 7113 and 0x711E visually resembles "T L I E" in "ouTLInE"

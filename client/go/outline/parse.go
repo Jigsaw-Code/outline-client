@@ -25,10 +25,11 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-// providerConfig is the config fetched from the provider. It may be either an error, or a tunnel configregistry.
+// providerConfig is the config fetched from the provider. It may contain either an error or a tunnel config.
+// Only the Error field is read (see doParseTunnelConfig); goccy ignores
+// unknown fields (e.g. transport) by default.
 type providerConfig struct {
-	ProviderErrorConfig  `yaml:",inline"`
-	ProviderTunnelConfig `yaml:",inline"`
+	ProviderErrorConfig `yaml:",inline"`
 }
 
 // ProviderErrorConfig is config returned by the provider with a custom error to
@@ -40,15 +41,14 @@ type ProviderErrorConfig struct {
 	}
 }
 
-// ProviderTunnelConfig is the config to fully configure the VPN.
-type ProviderTunnelConfig struct {
-	ProviderClientConfig `yaml:",inline"`
-}
-
-// firstHopAndTunnelConfigJSON must match FirstHopAndTunnelConfigJson in configregistry.ts.
+// firstHopAndTunnelConfigJSON must match FirstHopAndTunnelConfigJson in config.ts.
 type firstHopAndTunnelConfigJSON struct {
-	Client         string          `json:"client"`
-	FirstHop       string          `json:"firstHop"`
+	Client string `json:"client"`
+	// FirstHop is the address the client will dial. On platforms where the
+	// analyzer resolves direct addresses it is an IP, so a VPN can install a
+	// bypass route covering exactly that address. Note Client keeps the config
+	// as written, so the stored access key is unaffected.
+	FirstHop       string                  `json:"firstHop"`
 	ConnectionType configregistry.ConnType `json:"connectionType"`
 }
 
@@ -84,7 +84,7 @@ func doParseTunnelConfig(input string) *InvokeMethodResult {
 	var stringValue string
 	var clientConfigMap map[string]any
 	if err := yaml.Unmarshal([]byte(input), &stringValue); err == nil {
-		// Legacy URL format. Input is the transport configregistry.
+		// Legacy URL format. Input is the transport config.
 		clientConfigMap = map[string]any{"transport": stringValue}
 	} else {
 		var yamlValue map[string]any
@@ -123,10 +123,10 @@ func doParseTunnelConfig(input string) *InvokeMethodResult {
 				return &InvokeMethodResult{Error: platErr}
 			}
 
-			// Extract client configregistry.
+			// Extract the client config.
 			clientConfigMap = yamlValue
 		} else {
-			// Legacy JSON format. Input is the transport configregistry.
+			// Legacy JSON format. Input is the transport config.
 			clientConfigMap = map[string]any{"transport": yamlValue}
 		}
 	}
@@ -144,27 +144,19 @@ func doParseTunnelConfig(input string) *InvokeMethodResult {
 		}
 	}
 
-	result := (&ClientConfig{
+	parsed, err := (&ClientParser{
 		DataDir: GetBackendConfig().DataDir,
-	}).New("", string(clientConfigBytes))
-	if result.Error != nil {
-		return &InvokeMethodResult{
-			Error: result.Error,
-		}
+	}).Parse("", string(clientConfigBytes))
+	if err != nil {
+		return &InvokeMethodResult{Error: platerrors.ToPlatformError(err)}
 	}
 	response := firstHopAndTunnelConfigJSON{
 		Client: string(clientConfigBytes),
 	}
-
-	streamFirstHop := result.Client.sd.ConnectionProviderInfo.FirstHop
-	packetFirstHop := result.Client.pr.ConnectionProviderInfo.FirstHop
-	if streamFirstHop == packetFirstHop {
-		response.FirstHop = streamFirstHop
+	if parsed.Info.Stream.FirstHop == parsed.Info.Packet.FirstHop {
+		response.FirstHop = parsed.Info.Stream.FirstHop
 	}
-
-	streamConnType := result.Client.sd.ConnectionProviderInfo.ConnType
-	packetConnType := result.Client.pr.ConnectionProviderInfo.ConnType
-	response.ConnectionType = combinedConnectionType(streamConnType, packetConnType)
+	response.ConnectionType = combinedConnectionType(parsed.Info.Stream.ConnType, parsed.Info.Packet.ConnType)
 
 	responseBytes, err := json.Marshal(response)
 	if err != nil {

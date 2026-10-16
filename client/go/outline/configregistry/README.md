@@ -1,101 +1,104 @@
 # Outline Config Registry
 
-## Overview
+`configregistry` is the Outline-owned layer above Composer and
+`composer/netconfig`. It chooses Outline's `$type` names and compatibility
+fallbacks, defines app-only transport configs, attaches connection metadata,
+and applies Outline transport policy.
 
-The Outline Config framework is a composable and extensible system to specify network strategies:
+The reusable layers below this package expose typed Configs and concrete parser
+constructors. They do not know Outline's registered names,
+`ConnectionProviderInfo`, compatibility forms, User-Agent, DNS interception,
+or platform address-resolution policy.
 
-- **Composable** because it lets strategies to be combined to build more advanced strategies.
-  For example, Shadowsocks-over-Websocket, or multi-hop.
-- **Extensible** because it's possible to register new strategies without having to change the
-  framework.
+## Lifecycle
 
-This framework underpins how the Outline client understands and establishes connections through various proxy protocols and combinations.
+The client config lifecycle is:
 
-## Configuration Format: YAML
-
-The config framework is based on YAML. JSON is a strict subset of YAML, so JSON notation can be used
-as well. YAML was chosen for several reasons that enhance readability and maintainability:
-
-- Removes the need for quotes in field names and many string values.
-- Allows the use of comments.
-- Has anchors, which can reduce duplication.
-
-We use the `github.com/goccy/go-yaml` library for parsing. This library was chosen after encountering issues with bugs in corner cases with the `gopkg.in/yaml.v3` library.
-
-## Core concepts
-
-A `ParseFunc[T any]` is a generic function that defines how to transform a configuration (typically a YAML config pre-parsed as a map, list or primitive type) into a specific Go type `T`.
-
-```go
-type ParseFunc[T any] func(ctx context.Context, input ConfigNode) (OutputType, error)
+```text
+YAML → wrapped parsers build typed graph and collect app metadata → runtime build
 ```
 
-The `Context` was added to enable parse-time context and sharing between parsers. This is useful for
-implementing features like named objects in the config that can be referred to by other parts of the configuration.
+1. `ClientParser.Parse` seeds the parse context with `WithMetadataCollection`
+   (and `WithDirectDialResolution`), then invokes the registry's whole-transport
+   parser. The per-parse metadata side table is reached only through the context.
+2. Each Outline registration wraps one concrete parser. After that parser has
+   successfully produced its canonical netconfig Config, the wrapper computes
+   metadata from the Config and already-recorded child metadata, stores the
+   result, and widens the original Config to its typed Kind interface. No
+   decorator Configs are returned.
+3. `ClientParser.Parse` retrieves the root metadata with
+   `TransportMetadata(ctx, cfg)`. Missing root or child metadata is an internal
+   registration-wiring error, never an implicit direct connection.
+4. `ClientConfig.New` recursively builds runtime dialers and listeners,
+   then applies Outline's DNS interception.
 
-A `TypeParser[T any]` is a utility that manages the parsing of a specific type `T` which can have multiple implementations or "subtypes".
-It allows for the registration of different subparsers (`ParseFunc`s), each associated with a unique subtype name.
+`first-supported` needs no metadata wrapper of its own: it returns the selected
+Config object unchanged, and that object's concrete parser has already stored
+its metadata. The collector is per parse, so a Composer and its long-lived
+parser registrations can be reused safely across sequential config refreshes.
 
-When a `TypeParser` encounters a YAML map with a `$type` attribute, it uses the value of `$type` to look up the corresponding registered subparser and delegates the parsing of that map to it.
+## Registration
 
-Example of `$type` usage in YAML:
+`Register` keeps named registrations sorted by `$type`: `basic-access`,
+`block`, `dial`, `direct`, `iptable`, `shadowsocks`, `tcpudp`, and
+`websocket`. Unnamed compatibility fallbacks are grouped afterward.
 
-```yaml
-endpoint:
-  $type: shadowsocks
-  address: "127.0.0.1:8080"
-  cipher: "chacha20-ietf-poly1305"
-  password: "your_password"
-```
+Every registration site shows the app-chosen name, concrete parser
+constructor, required metadata callback, and any app option such as Outline's
+WebSocket User-Agent. This deliberately keeps protocol syntax in netconfig and
+Outline semantics at the application boundary. Netconfig has no multi-protocol
+`Register…` helpers and no canonical wire names; the same parser constructor
+can be registered more than once with different names or options.
 
-Here, a `TypeParser` for an "endpoint" would see `$type: shadowsocks` and delegate to the "shadowsocks" subparser.
+The metadata-aware parser adapters cover all five netconfig Kinds and the
+app-owned whole-transport Kind. They record metadata and return the original
+concrete Config widened to the requested interface. They do not inspect private
+`registry.Registration` state.
 
-When you create a `TypeParser`, a _fallback handler_ must be specified. If the input config is not
-a map, or is a map without a `$type` attribute, the fallback handler is called. This is helpful
-for handling cases like parsing strings and the empty value. For example, a stream endpoint
-can be specified simply as a string address (e.g., `"proxy.example.com:443"`). This string would be parsed by the stream dialer `TypeParser`'s fallback handler.
+## Metadata behavior
 
-## Application Concepts
+- Direct configs are direct with no first hop; block configs are blocked.
+- Dial endpoints inherit their child dialer's type. A direct child makes the
+  endpoint address the first hop and resolves it under Outline's platform
+  policy; a tunneled child leaves the address untouched and preserves its first
+  hop.
+- WebSocket inherits its inner stream endpoint metadata.
+- Shadowsocks stream, packet-dialer, and packet-listener forms are tunneled and
+  preserve their endpoint's first hop.
+- IP table preserves the blocked/direct/tunneled/partial aggregation semantics
+  and deliberately leaves first hop empty.
+- TCP/UDP transports collect stream and packet metadata independently. The
+  legacy Shadowsocks transport collects both sides; Basic Access marks both
+  sides direct.
 
-The Outline config defines a few concepts that are closely tied to the client application.
+On Linux and Windows, production parsing resolves a direct endpoint once per
+parse and rewrites `Address` to that stable result. The stream and packet halves
+share the collector's resolution cache, so `FirstHop` is the address the
+runtime dials and a platform bypass route can cover it exactly. netconfig itself
+never resolves; this rewrite is the only resolution. Resolution failure is
+non-fatal: the hostname remains and the runtime dialer resolves it at dial time.
+Tests disable external DNS unless they inject a resolver.
 
-In [types.go](./types.go), we define a few higher-level types for the Outline config.
-Some of these are wrappers around concepts from the Outline SDK, augmented with additional behavior or metadata needed by the application. For instance, we might add information about the first hop of a strategy, indicating whether it's a direct connection or tunneled, and if tunneled, the tunnel address. The use of generics in these types helps minimize code duplication.
+## Adding a config type
 
-One of the central pieces is the `TransportPair`, an object used by the VPN code to create TCP and UDP tunnels. The `NewDefaultTransportProvider` function is responsible for creating the `TypeParser` for `TransportPair`. This is where different network strategies (like Shadowsocks, HTTP proxies, Websockets, etc.) are registered.
+Generic protocol Configs and parser constructors belong in
+`composer/netconfig`; they must not choose a `$type` name or import this
+package. Add each Outline registration directly in `Register` with a metadata
+callback for every Kind it implements. A parent callback must use
+`requireConnectionInfo` for parsed children, so a missing child wrapper fails
+as an internal wiring error.
 
-Example of registering subparsers in `NewDefaultTransportProvider`:
+Outline-only Configs and compatibility behavior belong here. Whole transports
+use `TransportPairInfo`, while dialers, endpoints, and listeners use
+`ConnectionProviderInfo`.
 
-```go
-// Websocket support.
-streamEndpoints.RegisterSubParser("websocket", NewWebsocketStreamEndpointSubParser(streamEndpoints.Parse))
-packetEndpoints.RegisterSubParser("websocket", NewWebsocketPacketEndpointSubParser(streamEndpoints.Parse))
-```
+## Testing
 
-Notice how the dependencies between the subparsers and the parsers they depend on are explicit
-and will cause compile-time errors if not provided.
-
-## Adding a New Strategy or Dialer
-
-To introduce a new network capability (e.g., custom proxy protocol, dialing strategy), follow these steps:
-
-1. **Create the Parser Function**:
-   Write a parser package or function (`SubParser`) that transforms the YAML block (`map[string]any`) into a native connection interface, such as `*Dialer[transport.StreamConn]`. If your dialer delegates downward to a nested endpoint, require that parser as an argument.
-
-   ```go
-   func NewMyStrategyDialerSubParser(parseEndpoint configyaml.ParseFunc[*Endpoint[transport.StreamConn]]) func(ctx context.Context, input map[string]any) (*Dialer[transport.StreamConn], error) {
-       return func(ctx context.Context, input map[string]any) (*Dialer[transport.StreamConn], error) {
-           // 1. Unmarshal `input` logic into your custom struct
-           // 2. Instantiate your streaming strategy
-           // 3. Return a `Dialer` conforming to the interface requirements
-       }
-   }
-   ```
-
-2. **Register the Strategy**:
-   Locate the `NewDefaultTransportProvider` function in [`registry.go`](registry.go).
-   Register your parsing function into the relevant parser category (`streamDialers` or `packetDialers`). The string key you provide will act as the native identifier for the matching `$type` field inside Outline configuration files.
-
-   ```go
-   streamDialers.RegisterSubParser("my_strategy", NewMyStrategyDialerSubParser(streamEndpoints.Parse))
-   ```
+- `metadata_test.go` covers metadata for every protocol/config form, all Kinds
+  and fallbacks, `first-supported`, missing collectors/children, resolution
+  policy and memoization, and repeated parser-option isolation.
+- `transport_test.go`, `corpus_test.go`, and `iptable_config_test.go` preserve
+  legacy URLs/mappings, prefixes, documented YAML (including anchors), exact
+  aggregation, and runtime dispatch behavior.
+- `client_test.go` verifies missing custom top-level metadata is surfaced as an
+  internal error and that parsing still does not build runtime resources.

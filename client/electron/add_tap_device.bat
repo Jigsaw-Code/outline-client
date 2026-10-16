@@ -115,7 +115,7 @@ if %errorlevel% neq 0 (
 :: device in the system. Configure with Cloudflare and Quad9 resolvers
 echo Configuring primary DNS...
 :: A "fake" local DNS resolver. Outline will intercept the real resolver at this address.
-:: Must align with: client/go/outline/configregistry/outline_dns_intercept.go
+:: Must align with: client/go/outline/configregistry/outline_dns.go
 %SystemRoot%\System32\netsh interface ip set dnsservers %DEVICE_NAME% static address=169.254.113.53
 if %errorlevel% neq 0 (
   echo Could not configure TAP device primary DNS. >&2

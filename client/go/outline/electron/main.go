@@ -27,13 +27,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/eycorsican/go-tun2socks/common/log/simple" // Register a simple logger.
+	"github.com/eycorsican/go-tun2socks/tun"
 	"localhost/client/go/outline"
-	"localhost/client/go/outline/configregistry"
 	"localhost/client/go/outline/connectivity"
 	"localhost/client/go/outline/platerrors"
 	"localhost/client/go/outline/vpn"
-	_ "github.com/eycorsican/go-tun2socks/common/log/simple" // Register a simple logger.
-	"github.com/eycorsican/go-tun2socks/tun"
 )
 
 // tun2socks exit codes. Must be kept in sync with definitions in "go_vpn_tunnel.ts"
@@ -124,15 +123,19 @@ func main() {
 		printErrorAndExit(platerrors.PlatformError{Code: platerrors.InvalidConfig, Message: "client config missing"}, exitCodeFailure)
 	}
 
-	clientConfig := outline.ClientConfig{}
+	clientConfig := outline.ClientParser{}
 	if *args.adapterIndex >= 0 {
 		tcp, udp, err := newBaseDialersWithAdapter(*args.adapterIndex)
 		if err != nil {
 			printErrorAndExit(err, exitCodeFailure)
 		}
-		clientConfig.TransportParser = configregistry.NewDefaultTransportProvider(tcp, udp)
+		clientComposer, err := outline.NewClientComposer(tcp, udp)
+		if err != nil {
+			printErrorAndExit(err, exitCodeFailure)
+		}
+		clientConfig.Composer = clientComposer
 	}
-	result := clientConfig.New(*args.keyID, *args.clientConfig)
+	result := clientConfig.NewClient(*args.keyID, *args.clientConfig)
 	if result.Error != nil {
 		printErrorAndExit(result.Error, exitCodeFailure)
 	}

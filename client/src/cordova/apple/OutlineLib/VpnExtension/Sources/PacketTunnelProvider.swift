@@ -35,7 +35,7 @@ public class SwiftBridge: NSObject {
     settings.ipv4Settings = ipv4Settings
 
     // A "fake" local DNS resolver. Outline will intercept the real resolver at this address.
-    // Must align with: client/go/outline/configregistry/outline_dns_intercept.go
+    // Must align with: client/go/outline/configregistry/outline_dns.go
     settings.dnsSettings = NEDNSSettings(servers: ["169.254.113.53"])
 
     return settings
@@ -43,7 +43,7 @@ public class SwiftBridge: NSObject {
 
   /** Creates a new Outline Client based on the given transportConfig. */
   public static func newClient(id: String, transportConfig: String) -> OutlineNewClientResult {
-    let clientConfig = OutlineClientConfig()
+    let clientConfig = OutlineClientParser()
     do {
       clientConfig.dataDir = try FileManager.default.url(
         for: .applicationSupportDirectory,
@@ -54,7 +54,7 @@ public class SwiftBridge: NSObject {
     } catch {
       DDLogWarn("Error finding Application Support directory: \(error)")
     }
-    let result = clientConfig.new(id, providerClientConfigText: transportConfig)
+    let result = clientConfig.newClient(id, providerClientConfigText: transportConfig)
     if result?.error != nil {
       DDLogInfo(
         "Failed to construct client: \(String(describing: result?.error))."
