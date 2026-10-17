@@ -17,6 +17,7 @@ package org.outline.vpn;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.VpnService;
 import android.os.Build;
 
 // Starts the VpnTunnelService on boot and after app updates. Receives broadcasts for
@@ -41,6 +42,15 @@ public class VpnServiceStarter extends BroadcastReceiver {
     boolean wasConnectedAtShutdown =
         VpnTunnelService.TunnelStatus.CONNECTED.equals(tunnelStore.getTunnelStatus());
     if (!wasConnectedAtShutdown) {
+      return;
+    }
+    // The VPN cannot be prepared from the background (it requires UI). If consent is missing (e.g.
+    // revoked, or granted to another VPN app), don't start the service: once
+    // startForegroundService() is called, Android requires the service to call startForeground()
+    // in time, and the service would immediately abort anyway. Clear the stale status instead.
+    final boolean vpnConsentGranted = VpnService.prepare(context) == null;
+    if (!AutoStartPolicy.shouldStartService(wasConnectedAtShutdown, vpnConsentGranted)) {
+      tunnelStore.setTunnelStatus(VpnTunnelService.TunnelStatus.DISCONNECTED);
       return;
     }
     Intent serviceIntent = new Intent(context, VpnTunnelService.class);
