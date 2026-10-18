@@ -73,7 +73,8 @@ async function checkUDPConnectivityWithArgs(
   const tun2socks = new ChildProcessHelper(pathToEmbeddedTun2socksBinary());
   tun2socks.isDebugModeEnabled = debugMode;
 
-  console.debug('[tun2socks] - checking connectivity ...', args);
+  // The arguments contain the complete access-key configuration.
+  console.debug('[tun2socks] - checking connectivity ...');
   const output = await tun2socks.launch(args);
 
   // Only parse the first line, because sometimes Windows Crypto API adds warnings to stdout.

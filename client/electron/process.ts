@@ -39,10 +39,8 @@ export class ProcessTerminatedSignalError extends Error {
 
 // Simple "one shot" child process launcher.
 //
-// NOTE: Because there is no way in Node.js to tell whether a process launched successfully,
-//       #startInternal always succeeds; use #onExit to be notified when the process has exited
-//       (which may be immediately after calling #startInternal if, e.g. the binary cannot be
-//       found).
+// The launch promise settles on close, after the process and its output streams
+// have finished, including when spawning fails.
 export class ChildProcessHelper {
   private readonly processName: string;
   private childProcess?: ChildProcess;
@@ -76,22 +74,20 @@ export class ChildProcessHelper {
         `subprocess ${this.processName} has already been launched`
       );
     }
-    this.childProcess = spawn(this.path, args);
+    const childProcess = (this.childProcess = spawn(this.path, args));
     return (this.waitProcessToExit = new Promise<string>((resolve, reject) => {
       let stdErrJSON = '';
       let stdOutStr = '';
+      let processError: Error | undefined;
       const onExit = (code?: number, signal?: string) => {
-        if (this.childProcess) {
-          this.childProcess.removeAllListeners();
+        if (this.childProcess === childProcess) {
           this.childProcess = undefined;
-        } else {
-          // When listening to both the 'exit' and 'error' events, guard against accidentally
-          // invoking handler functions multiple times.
-          return;
         }
 
         logExit(this.processName, code, signal);
-        if (code === 0) {
+        if (processError) {
+          reject(processError);
+        } else if (code === 0) {
           resolve(stdOutStr);
         } else if (code) {
           reject(new ProcessTerminatedExitCodeError(code, stdErrJSON));
@@ -111,7 +107,8 @@ export class ChildProcessHelper {
           // This will be captured by Sentry
           console.error(`[${this.processName} - STDERR]: ${data}`);
         }
-        stdErrJSON += data?.toString() ?? '';
+        // Keep recent diagnostics without retaining a session's entire log.
+        stdErrJSON = (stdErrJSON + (data?.toString() ?? '')).slice(-65536);
       });
 
       if (this.isDebugModeEnabled) {
@@ -121,10 +118,10 @@ export class ChildProcessHelper {
         this.childProcess?.stderr?.pipe(process.stderr);
       }
 
-      // We have to listen for both events: error means the process could not be launched and in that
-      // case exit will not be invoked.
-      this.childProcess?.on('error', onExit.bind(this));
-      this.childProcess?.on('exit', onExit.bind(this));
+      childProcess.on('error', error => {
+        processError = error;
+      });
+      childProcess.once('close', onExit);
     }));
   }
 
@@ -139,15 +136,21 @@ export class ChildProcessHelper {
       // Never started.
       return '';
     }
-    this.childProcess.kill();
-    return (await this.waitProcessToExit) ?? '';
+    const childProcess = this.childProcess;
+    const waitProcessToExit = this.waitProcessToExit;
+    childProcess.kill();
+    // A helper stuck during graceful shutdown must not block server switching
+    // forever. Target this process only, even if another one starts meanwhile.
+    const killTimeout = setTimeout(() => childProcess.kill('SIGKILL'), 5000);
+    try {
+      return (await waitProcessToExit) ?? '';
+    } finally {
+      clearTimeout(killTimeout);
+    }
   }
 
   set onStdOut(listener: ((data?: string | Buffer) => void) | null) {
     this.stdOutListener = listener;
-    if (!this.stdOutListener && !this.isDebugModeEnabled) {
-      this.childProcess?.stdout?.removeAllListeners();
-    }
   }
 }
 

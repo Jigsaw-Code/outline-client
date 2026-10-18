@@ -88,58 +88,66 @@ export class RoutingDaemon {
   // configured the system's routing table.
   // Returns a string representing the network adapter index that connects to the gateway.
   async start() {
+    if (this.stopping) {
+      throw new Error('routing daemon has been stopped');
+    }
     return new Promise<string>((fulfill, reject) => {
-      const newSocket = (this.socket = createConnection(SERVICE_NAME, () => {
-        newSocket.removeListener('error', initialErrorHandler);
-        const cleanup = () => {
-          newSocket.removeAllListeners();
-          this.socket = null;
-          this.fulfillDisconnect();
-        };
-        newSocket.once('close', cleanup);
-        newSocket.once('error', cleanup);
+      const socket = (this.socket = createConnection(SERVICE_NAME));
+      const timeout = setTimeout(() => {
+        reject(new Error('routing daemon configuration timed out'));
+        socket.destroy();
+      }, 30000);
 
-        newSocket.once('data', data => {
+      socket.once('close', () => {
+        clearTimeout(timeout);
+        this.socket = null;
+        this.fulfillDisconnect();
+        // Also settle start() if the service closes before its first response.
+        reject(
+          new Error('routing daemon closed before configuration completed')
+        );
+      });
+      socket.once('error', err => {
+        clearTimeout(timeout);
+        const perr = new PlatformError(
+          GoErrorCode.ROUTING_SERVICE_NOT_RUNNING,
+          'routing daemon connection failed',
+          {cause: err}
+        );
+        reject(new Error(perr.toJSON()));
+        socket.destroy();
+      });
+      socket.once('connect', () => {
+        if (this.stopping) {
+          socket.destroy();
+          return;
+        }
+        socket.once('data', data => {
+          clearTimeout(timeout);
           const message = this.parseRoutingServiceResponse(data);
           if (
             !message ||
             message.action !== RoutingServiceAction.CONFIGURE_ROUTING ||
             message.statusCode !== RoutingServiceStatusCode.SUCCESS
           ) {
-            // NOTE: This will rarely occur because the connectivity tests
-            //       performed when the user clicks "CONNECT" should detect when
-            //       the system is offline and that, currently, is pretty much
-            //       the only time the routing service will fail.
             reject(
               new Error(
-                message
-                  ? message.errorMessage
-                  : 'empty routing service response'
+                message?.errorMessage || 'invalid routing service response'
               )
             );
-            newSocket.end();
+            socket.destroy();
             return;
           }
-
-          newSocket.on('data', this.dataHandler.bind(this));
-
-          // Potential race condition: this routing daemon might already be stopped by the tunnel
-          // when one of the dependencies (ss-local/tun2socks) exited
-          // TODO(junyi): better handling this case in the next installation logic fix
+          socket.on('data', this.dataHandler.bind(this));
           if (this.stopping) {
-            cleanup();
-            newSocket.destroy();
-            const perr = new PlatformError(
-              GoErrorCode.ROUTING_SERVICE_NOT_RUNNING,
-              'routing daemon service stopped before started'
+            reject(
+              new Error('routing daemon stopped before configuration completed')
             );
-            reject(new Error(perr.toJSON()));
           } else {
             fulfill(message.gatewayAdapterIndex);
           }
         });
-
-        newSocket.write(
+        socket.write(
           JSON.stringify({
             action: RoutingServiceAction.CONFIGURE_ROUTING,
             parameters: {
@@ -148,19 +156,7 @@ export class RoutingDaemon {
             },
           } as RoutingServiceRequest)
         );
-      }));
-
-      const initialErrorHandler = (err: Error) => {
-        console.error('Routing daemon socket setup failed', err);
-        this.socket = null;
-        const perr = new PlatformError(
-          GoErrorCode.ROUTING_SERVICE_NOT_RUNNING,
-          'routing daemon is not running',
-          {cause: err}
-        );
-        reject(new Error(perr.toJSON()));
-      };
-      newSocket.once('error', initialErrorHandler);
+      });
     });
   }
 
@@ -213,7 +209,11 @@ export class RoutingDaemon {
 
   private async writeReset() {
     return new Promise<void>((resolve, reject) => {
-      const written = this.socket?.write(
+      if (!this.socket) {
+        reject(new Error('routing daemon is disconnected'));
+        return;
+      }
+      this.socket.write(
         JSON.stringify({
           action: RoutingServiceAction.RESET_ROUTING,
           parameters: {},
@@ -226,27 +226,38 @@ export class RoutingDaemon {
           }
         }
       );
-      if (!written) {
-        reject(new Error('Write failed'));
-      }
     });
   }
 
-  // stop() resolves when the stop command has been sent.
-  // Use #onceDisconnected to be notified when the connection terminates.
+  // Wait for the service to release its single-client pipe before another tunnel starts.
   async stop() {
-    if (!this.socket) {
-      // Never started.
+    if (this.stopping) {
+      return this.disconnected;
+    }
+    this.stopping = true;
+    const socket = this.socket;
+    if (!socket) {
       this.fulfillDisconnect();
       return;
     }
-    if (this.stopping) {
-      // Already stopped.
-      return;
+    const timeout = setTimeout(() => {
+      console.warn('routing daemon did not disconnect in time; closing pipe');
+      socket.destroy();
+    }, 10000);
+    try {
+      if (socket.connecting) {
+        socket.destroy();
+      } else {
+        await this.writeReset();
+      }
+      await this.disconnected;
+    } catch (e) {
+      socket.destroy();
+      await this.disconnected;
+      throw e;
+    } finally {
+      clearTimeout(timeout);
     }
-    this.stopping = true;
-
-    return this.writeReset();
   }
 
   get onceDisconnected() {

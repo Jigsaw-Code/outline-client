@@ -49,8 +49,21 @@ export class GoVpnTunnel implements VpnTunnel {
   private readonly tun2socks: GoTun2socks;
   private isDebugMode = false;
 
-  // See #resumeListener.
   private disconnected = false;
+  private suspended = false;
+  private connecting?: Promise<void>;
+  private restarting?: Promise<void>;
+  private restartRequested = false;
+  private readonly onSuspend = () => {
+    void this.suspendListener().catch(e => {
+      console.error('could not suspend tun2socks:', e);
+    });
+  };
+  private readonly onResume = () => {
+    void this.resumeListener().catch(e => {
+      console.error('could not resume tun2socks:', e);
+    });
+  };
 
   private isUdpEnabled = false;
   private gatewayAdapterIndex?: string;
@@ -90,11 +103,24 @@ export class GoVpnTunnel implements VpnTunnel {
 
   // Fulfills once all three helpers have started successfully.
   async connect(checkProxyConnectivity: boolean) {
+    if (this.disconnected) {
+      throw new Error('tunnel is disconnected');
+    }
+    this.connecting = this.connectInternal(checkProxyConnectivity);
+    try {
+      await this.connecting;
+    } catch (e) {
+      await this.disconnect();
+      throw e;
+    }
+  }
+
+  private async connectInternal(checkProxyConnectivity: boolean) {
     if (IS_WINDOWS) {
       // Windows: when the system suspends, tun2socks terminates due to the TAP device getting
       // closed.
-      powerMonitor.on('suspend', this.suspendListener.bind(this));
-      powerMonitor.on('resume', this.resumeListener.bind(this));
+      powerMonitor.on('suspend', this.onSuspend);
+      powerMonitor.on('resume', this.onResume);
     }
 
     // Disconnect the tunnel if the routing service disconnects unexpectedly.
@@ -122,9 +148,18 @@ export class GoVpnTunnel implements VpnTunnel {
     }
     console.log(`UDP support: ${this.isUdpEnabled}`);
 
+    this.ensureConnected();
     console.log('starting routing daemon');
     this.gatewayAdapterIndex = await this.routing.start();
+    this.ensureConnected();
     await this.startTun2socks();
+    this.ensureConnected();
+  }
+
+  private ensureConnected() {
+    if (this.disconnected) {
+      throw new Error('tunnel is disconnected');
+    }
   }
 
   networkChanged(status: TunnelStatus, gatewayIndex?: string) {
@@ -135,13 +170,16 @@ export class GoVpnTunnel implements VpnTunnel {
       if (gatewayIndex) {
         this.gatewayAdapterIndex = gatewayIndex;
       }
-      if (this.reconnectedListener) {
-        this.reconnectedListener();
-      }
-
-      // Test whether UDP availability has changed; since it won't change 99% of the time, do this
-      // *after* we've informed the client we've reconnected.
-      void this.updateUdpAndRestartTun2socks();
+      this.reconnectingListener?.();
+      void this.updateUdpAndRestartTun2socks()
+        .then(() => {
+          if (!this.disconnected && !this.suspended) {
+            this.reconnectedListener?.();
+          }
+        })
+        .catch(e => {
+          console.error('could not restart tun2socks after network change:', e);
+        });
     } else if (status === TunnelStatus.RECONNECTING) {
       if (this.reconnectingListener) {
         this.reconnectingListener();
@@ -154,6 +192,7 @@ export class GoVpnTunnel implements VpnTunnel {
   }
 
   private async suspendListener() {
+    this.suspended = true;
     // Preemptively stop tun2socks to avoid a silent restart that will fail.
     await this.tun2socks.stop();
     console.log('stopped tun2socks in preparation for suspend');
@@ -161,12 +200,9 @@ export class GoVpnTunnel implements VpnTunnel {
 
   private async resumeListener() {
     if (this.disconnected) {
-      // NOTE: Cannot remove resume listeners - Electron bug?
-      console.error(
-        'resume event invoked but this tunnel is terminated - doing nothing'
-      );
       return;
     }
+    this.suspended = false;
 
     console.log('restarting tun2socks after resume');
     await this.updateUdpAndRestartTun2socks();
@@ -184,7 +220,30 @@ export class GoVpnTunnel implements VpnTunnel {
     }
   }
 
-  private async updateUdpAndRestartTun2socks() {
+  private updateUdpAndRestartTun2socks(): Promise<void> {
+    this.restartRequested = true;
+    if (!this.restarting) {
+      this.restarting = this.restartTun2socks();
+    }
+    return this.restarting;
+  }
+
+  private async restartTun2socks() {
+    try {
+      // A network notification can arrive while the initial connection is starting.
+      await this.connecting;
+      while (this.restartRequested && !this.disconnected && !this.suspended) {
+        this.restartRequested = false;
+        await this.checkUdpAndRestartTun2socks();
+      }
+    } finally {
+      // Clear ownership before settling the worker promise. A request arriving
+      // in a later microtask must not join a worker that has already finished.
+      this.restarting = undefined;
+    }
+  }
+
+  private async checkUdpAndRestartTun2socks() {
     try {
       if (IS_WINDOWS) {
         this.isUdpEnabled = await checkUDPConnectivityWindows(
@@ -203,24 +262,31 @@ export class GoVpnTunnel implements VpnTunnel {
       console.error('connectivity check failed:', e);
     }
 
+    if (this.disconnected || this.suspended) {
+      return;
+    }
     // Restart tun2socks.
     try {
       await this.tun2socks.stop();
     } catch {
       // Ignore the errors
     }
-    await this.startTun2socks();
+    if (!this.disconnected && !this.suspended) {
+      await this.startTun2socks();
+    }
   }
 
   // Use #onceDisconnected to be notified when the tunnel terminates.
   async disconnect() {
     if (this.disconnected) {
-      return;
+      return this.onAllHelpersStopped;
     }
+    // Mark this before awaiting anything, so in-flight checks cannot restart it.
+    this.disconnected = true;
 
     if (IS_WINDOWS) {
-      powerMonitor.removeListener('suspend', this.suspendListener.bind(this));
-      powerMonitor.removeListener('resume', this.resumeListener.bind(this));
+      powerMonitor.removeListener('suspend', this.onSuspend);
+      powerMonitor.removeListener('resume', this.onResume);
     }
 
     try {
@@ -239,7 +305,6 @@ export class GoVpnTunnel implements VpnTunnel {
       console.error(`could not stop routing: ${e.message}`);
     }
     this.resolveAllHelpersStopped();
-    this.disconnected = true;
   }
 
   // Fulfills once all helper processes have stopped.
@@ -267,6 +332,7 @@ class GoTun2socks {
   // Resolved when Tun2socks prints "tun2socks running" to stdout
   // Call `monitorStarted` to set this field
   private whenStarted: Promise<void>;
+  private running?: Promise<void>;
   private stopRequested = false;
   private readonly process: ChildProcessHelper;
 
@@ -299,7 +365,7 @@ class GoTun2socks {
     return this.startWithPlatformSpecificArgs(clientConfig, isUdpEnabled, args);
   }
 
-  private startWithPlatformSpecificArgs(
+  private async startWithPlatformSpecificArgs(
     clientConfig: string,
     isUdpEnabled: boolean,
     args: string[]
@@ -322,26 +388,59 @@ class GoTun2socks {
       args.push('-dnsFallback');
     }
 
-    const whenProcessEnded = this.launchWithAutoRestart(args);
+    if (this.running) {
+      return Promise.reject(new Error('tun2socks is already running'));
+    }
+    this.stopRequested = false;
+    const whenProcessEnded = (this.running = this.launchWithAutoRestart(
+      args
+    ).finally(() => {
+      this.running = undefined;
+    }));
 
-    // Either started successfully, or terminated exceptionally
-    return Promise.race([this.whenStarted, whenProcessEnded]);
+    let timeout: NodeJS.Timeout;
+    try {
+      await Promise.race([
+        this.whenStarted,
+        whenProcessEnded,
+        new Promise<void>((_, reject) => {
+          timeout = setTimeout(() => {
+            reject(new Error('tun2socks startup timed out'));
+          }, 30000);
+        }),
+      ]);
+    } catch (e) {
+      try {
+        await this.stop();
+      } catch {
+        // Preserve the startup error rather than the expected termination signal.
+      }
+      throw e;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private monitorStarted(): Promise<void> {
     return (this.whenStarted = new Promise(resolve => {
+      const readyMessage = 'tun2socks running';
+      let output = '';
       this.process.onStdOut = (data?: string | Buffer) => {
-        if (data?.toString().includes('tun2socks running')) {
+        output += data?.toString() ?? '';
+        if (output.includes(readyMessage)) {
           console.debug('[tun2socks] - started');
           this.process.onStdOut = null;
           resolve();
+        } else {
+          // Preserve only enough text to recognize a marker split across chunks.
+          output = output.slice(-(readyMessage.length - 1));
         }
       };
     }));
   }
 
   private async launchWithAutoRestart(args: string[]): Promise<void> {
-    console.debug('[tun2socks] - starting to route network traffic ...', args);
+    console.debug('[tun2socks] - starting to route network traffic ...');
     let restarting = false;
     let lastError: Error | null = null;
     do {
@@ -360,6 +459,9 @@ class GoTun2socks {
         lastError = null;
         await this.process.launch(args, false);
         console.info('[tun2socks] - exited with no errors');
+        if (!this.stopRequested && !restarting) {
+          lastError = new Error('tun2socks exited before becoming ready');
+        }
       } catch (e) {
         console.error('[tun2socks] - terminated due to:', e);
         lastError = e;
@@ -370,9 +472,15 @@ class GoTun2socks {
     }
   }
 
-  stop() {
+  async stop() {
     this.stopRequested = true;
-    return this.process.stop();
+    const running = this.running;
+    try {
+      await this.process.stop();
+    } finally {
+      // Finish the old restart loop before a new start can reset stopRequested.
+      await running;
+    }
   }
 
   enableDebugMode() {
