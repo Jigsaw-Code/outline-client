@@ -108,58 +108,25 @@ class StatusItemController: NSObject {
     }
     
     @objc func toggleVpnConnection(_ sender: NSMenuItem) {
-        NSLog("[StatusItemController] Toggle VPN connection")
-        
+        let action = sender.title == MenuTitle.connect ? "connect" : "disconnect"
         Task {
             let managers = try? await NETunnelProviderManager.loadAllFromPreferences()
-            
-            // Early return if no VPN profile exists
-            guard let managers = managers, !managers.isEmpty else {
-                NSLog("[StatusItemController] No VPN profile found, opening app")
-                DispatchQueue.main.async {
-                    self.openApplication(nil)
-                }
+            guard let manager = managers?.first,
+                  let config = manager.protocolConfiguration as? NETunnelProviderProtocol,
+                  let serverId = config.providerConfiguration?["id"] as? String else {
+                DispatchQueue.main.async { self.openApplication(nil) }
                 return
             }
-            
-            guard let manager = managers.first else {
-                NSLog("[StatusItemController] Failed to get VPN manager")
-                return
-            }
-            
-            // Base action purely on menu item title, not current status
-            let isConnectAction = sender.title == MenuTitle.connect
-            
-            if isConnectAction {
-                // User clicked "Connect" - attempt to connect regardless of current state
-                NSLog("[StatusItemController] Connecting to VPN tunnel")
-                do {
-                    try manager.connection.startVPNTunnel()
-                } catch {
-                    NSLog("[StatusItemController] Failed to connect VPN: \(error.localizedDescription)")
-                    // If connection fails, open the app
-                    DispatchQueue.main.async {
-                        self.openApplication(nil)
-                    }
-                }
-            } else {
-                // User clicked "Disconnect" - attempt to disconnect regardless of current state
-                NSLog("[StatusItemController] Disconnecting VPN")
-                
-                // Disable on-demand rules to prevent automatic reconnection, this automatically gets re-enabled if the user clicks the connect button again (regardless of app or menubar)
-                do {
-                    try await manager.loadFromPreferences()
-                    manager.isOnDemandEnabled = false
-                    try await manager.saveToPreferences()
-                    NSLog("[StatusItemController] Disabled on-demand rules")
-                } catch {
-                    NSLog("[StatusItemController] Failed to disable on-demand rules: \(error.localizedDescription)")
-                }
-                
-                manager.connection.stopVPNTunnel()
+            // Use the same user-intent and operation queue as the GUI and CLI.
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("outlineControlMenuCommand"), object: nil,
+                    userInfo: ["action": action, "server": serverId]
+                )
             }
         }
     }
+
 }
 
 private func getUiWindow() -> NSWindow? {

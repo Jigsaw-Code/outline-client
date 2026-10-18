@@ -26,6 +26,7 @@ export class RootNavigation extends LitElement {
   @property({type: Boolean}) showQuit: boolean;
   @property({type: String}) align: 'left' | 'right';
   @property({type: String}) dataCollectionPageUrl: string;
+  @property({type: Boolean}) showDomainExclusions = false;
   @property({type: Boolean}) showAppearanceView: boolean = false;
 
   static styles = css`
@@ -248,6 +249,15 @@ export class RootNavigation extends LitElement {
                   ${this.localize('appearance-page-title')}
                 </md-list-item>
               `
+            : nothing}
+          ${this.showDomainExclusions
+            ? html`<md-list-item
+                type="button"
+                @click=${() => this.changePage('domain-exclusions')}
+              >
+                <md-icon slot="start">alt_route</md-icon>
+                ${this.localize('domain-exclusions-page-title')}
+              </md-list-item>`
             : nothing}
           ${this.showQuit
             ? html`<md-list-item @click=${this.quit}>

@@ -100,5 +100,6 @@
     </config-file>
 
     <source-file src="apple/src/OutlinePlugin.swift" />
+    <source-file src="apple/src/OutlineControlSocket.swift" />
   </platform>
 </plugin>

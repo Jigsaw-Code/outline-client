@@ -36,6 +36,7 @@ NSString *const kDefaultPathKey = @"defaultPath";
 @property (nonatomic) DDFileLogger *fileLogger;
 @property (nonatomic, nullable) NSString *tunnelId;
 @property (nonatomic, nullable) NSString *transportConfig;
+@property (nonatomic) NSString *domainExclusions;
 @property (nonatomic) dispatch_queue_t packetQueue;
 @end
 
@@ -88,6 +89,11 @@ NSString *const kDefaultPathKey = @"defaultPath";
   }
   self.tunnelId = tunnelId;
   self.transportConfig = transportConfig;
+  id exclusions = protocol.providerConfiguration[@"domainExclusions"];
+  if (exclusions != nil && ![exclusions isKindOfClass:[NSString class]]) {
+    return startDone([SwiftBridge newInvalidConfigOutlineErrorWithMessage:@"invalid domain exclusions"]);
+  }
+  self.domainExclusions = exclusions ?: @"";
 
   // startTunnel has 3 cases:
   // - When started from the app, we get options != nil, with no ["is-on-demand"] entry.
@@ -108,7 +114,7 @@ NSString *const kDefaultPathKey = @"defaultPath";
     return startDone([SwiftBridge newOutlineErrorFromPlatformError:deviceErr]);
   }
 
-  [self startRouting:[SwiftBridge getTunnelNetworkSettings]
+  [self startRouting:[SwiftBridge getTunnelNetworkSettingsWithDomainExclusions:self.domainExclusions]
           completion:^(NSError *_Nullable error) {
             if (error != nil) {
               return startDone([SwiftBridge newOutlineErrorFromNsError:error]);
@@ -241,7 +247,7 @@ bool getIpAddressString(const struct sockaddr *sa, char *s, socklen_t maxbytes) 
     return;
   }
   // Nothing changed. Connect the tunnel with the current settings.
-  [self startRouting:[SwiftBridge getTunnelNetworkSettings]
+  [self startRouting:[SwiftBridge getTunnelNetworkSettingsWithDomainExclusions:self.domainExclusions]
          completion:^(NSError *_Nullable error) {
            if (error != nil) {
              [self cancelTunnelWithError:error];
@@ -275,7 +281,7 @@ bool getIpAddressString(const struct sockaddr *sa, char *s, socklen_t maxbytes) 
 }
 
 - (PlaterrorsPlatformError*)connectRemoteDevice:(BOOL)isOnDemand {
-  OutlineNewClientResult* clientResult = [SwiftBridge newClientWithId: self.tunnelId transportConfig:self.transportConfig];
+  OutlineNewClientResult* clientResult = [SwiftBridge newClientWithId: self.tunnelId transportConfig:self.transportConfig domainExclusions:self.domainExclusions];
   if (clientResult.error != nil) {
     return clientResult.error;
   }

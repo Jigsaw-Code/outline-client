@@ -12,6 +12,8 @@
 	<array>
 		<string>group.org.getoutline.client</string>
 	</array>
+	<key>com.apple.security.network.server</key>
+	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
 </dict>

@@ -11,6 +11,7 @@ require (
 	go.nhat.io/cookiejar v0.3.0
 	golang.getoutline.org/sdk v0.1.0-rc1
 	golang.getoutline.org/sdk/x v0.0.9-alpha.1
+	golang.org/x/net v0.44.0
 	golang.org/x/mobile v0.0.0-20250813145510-f12310a0cfd9
 	golang.org/x/sys v0.36.0
 )
@@ -74,7 +75,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/text v0.29.0 // indirect

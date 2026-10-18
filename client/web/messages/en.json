@@ -150,5 +150,15 @@
   "unreachable-server-state": "Unreachable",
   "update-downloaded": "An updated version of Outline has been downloaded. It will be installed when you restart Outline.",
   "version": "Version {appVersion}",
-  "yes": "Yes"
+  "yes": "Yes",
+  "domain-exclusions-page-title": "Domain exclusions",
+  "domain-exclusions-description": "Excluded domains use your regular internet connection and public IP instead of the Outline server. Applies to every server on this device.",
+  "domain-exclusions-help": "Enter up to 100 exact domains, one per line. Subdomains must be listed separately. Use system DNS; apps with their own secure DNS may not use these rules. Restart affected apps after changing exclusions.",
+  "domain-exclusions-label": "Domains to exclude",
+  "domain-exclusions-disconnect": "Disconnect Outline before saving changes. Then reconnect to apply them.",
+  "domain-exclusions-save": "Save exclusions",
+  "domain-exclusions-reload": "Reload saved list",
+  "domain-exclusions-saved": "Saved. Connect Outline to use these exclusions.",
+  "domain-exclusions-load-error": "Could not load exclusions. Try again.",
+  "domain-exclusions-save-error": "Could not save. Enter exact domain names without URLs, IP addresses or wildcards (maximum 100)."
 }

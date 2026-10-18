@@ -12,6 +12,7 @@
 		1CE7466BA73B4CCB838EBE21 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 941052A220F54953928FF2E2 /* libz.tbd */; };
 		1D3623260D0F684500981E51 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* AppDelegate.m */; };
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
+		EEAC01000000000000000001 /* OutlineControlSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAC01000000000000000002 /* OutlineControlSocket.swift */; };
 		2A617D29B96942E58B082FAC /* OutlinePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFAFA54943F490EAF4CD5BC /* OutlinePlugin.swift */; };
 		301BF552109A68D80062928A /* libCordova.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 301BF535109A57CC0062928A /* libCordova.a */; };
 		302D95F114D2391D003F00A1 /* MainViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 302D95EF14D2391D003F00A1 /* MainViewController.m */; };
@@ -224,6 +225,7 @@
 		A2AC1A992B082526004E13CB /* hi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hi; path = hi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A2AC1A9A2B082526004E13CB /* ca */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ca; path = ca.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A2AC1A9B2B082526004E13CB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EEAC01000000000000000002 /* OutlineControlSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutlineControlSocket.swift; path = "cordova-plugin-outline/OutlineControlSocket.swift"; sourceTree = "<group>"; };
 		AAFAFA54943F490EAF4CD5BC /* OutlinePlugin.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = OutlinePlugin.swift; path = "cordova-plugin-outline/OutlinePlugin.swift"; sourceTree = "<group>"; };
 		AC66E9902E99C7820029B1EB /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		EB87FDF31871DA8E0020F90C /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../../www; sourceTree = "<group>"; };
@@ -355,6 +357,7 @@
 			children = (
 				0394302BA6114B2AB648D4FF /* CDVStatusBar.m */,
 				0168F53D3AFF46F5B346C874 /* CDVStatusBar.h */,
+				EEAC01000000000000000002 /* OutlineControlSocket.swift */,
 				AAFAFA54943F490EAF4CD5BC /* OutlinePlugin.swift */,
 				91E45572BB494E9299D2DD41 /* CDVClipboard.m */,
 				936C2951B7544BC8A20B6746 /* CDVClipboard.h */,
@@ -681,6 +684,7 @@
 				1D3623260D0F684500981E51 /* AppDelegate.m in Sources */,
 				302D95F114D2391D003F00A1 /* MainViewController.m in Sources */,
 				5F7F90AE0E924FD7B065C415 /* CDVStatusBar.m in Sources */,
+				EEAC01000000000000000001 /* OutlineControlSocket.swift in Sources */,
 				2A617D29B96942E58B082FAC /* OutlinePlugin.swift in Sources */,
 				1273B4E700B84E31B2528701 /* CDVClipboard.m in Sources */,
 				A271D42D2A708240009981B2 /* AppDelegate+Outline.m in Sources */,

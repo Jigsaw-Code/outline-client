@@ -24,6 +24,7 @@ setRootPath(
 );
 
 import {AbstractClipboard} from './clipboard';
+import {ControlRequest, VpnSnapshot} from './connection_control';
 import {EnvironmentVariables} from './environment';
 import {main} from './main';
 import {installDefaultMethodChannel, MethodChannel} from './method_channel';
@@ -156,7 +157,42 @@ window.handleOpenURL = (url: string) => {
 document.addEventListener('deviceready', async () => {
   installDefaultMethodChannel(new CordovaMethodChannel());
   try {
-    await main(new CordovaPlatform());
+    const app = await main(new CordovaPlatform());
+    if (app && cordova.platformId === 'ios') {
+      const exclusions = {
+        read: () => pluginExec<object>('getDomainExclusions'),
+        write: (domains: string[]) =>
+          pluginExec<object>('setDomainExclusions', domains),
+      };
+      const control = (request: ControlRequest) =>
+        app.connectionControl.request(
+          request,
+          () => pluginExec<VpnSnapshot>('controlSnapshot'),
+          () => pluginExec<void>('controlDisconnect'),
+          exclusions
+        );
+      app.enableDomainExclusions(
+        async domains =>
+          control({
+            action: domains === undefined ? 'exclusions' : 'set-exclusions',
+            domains,
+            deadline: Date.now() + 115000,
+          }) as Promise<
+            import('../views/domain_exclusions_view').ExclusionSettings
+          >
+      );
+      cordova.exec(
+        async (request: ControlRequest & {id: string}) => {
+          const response = await control(request);
+          await pluginExec<void>('controlReply', request.id, response);
+        },
+        () =>
+          console.info('Local command bridge is unavailable on this platform'),
+        OUTLINE_PLUGIN_NAME,
+        'onControlCommand',
+        []
+      );
+    }
   } catch (e) {
     console.error('main() failed: ', e);
   }

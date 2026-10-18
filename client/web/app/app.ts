@@ -16,6 +16,7 @@ import {Localizer} from '@outline/infrastructure/i18n';
 import {OperationTimedOut} from '@outline/infrastructure/timeout_promise';
 
 import {Clipboard} from './clipboard';
+import {ConnectionControl} from './connection_control';
 import {EnvironmentVariables} from './environment';
 import * as config from './outline_server_repository/config';
 import {Settings, SettingsKey, Appearance} from './settings';
@@ -82,6 +83,7 @@ export function isOutlineAccessKey(url: string): boolean {
 const DEFAULT_SERVER_CONNECTION_STATUS_CHANGE_TIMEOUT = 600;
 
 export class App {
+  readonly connectionControl: ConnectionControl;
   private localize: Localizer;
   private ignoredAccessKeys: {[accessKey: string]: boolean} = {};
   private serverConnectionChangeTimeouts: {[serverId: string]: boolean} = {};
@@ -107,6 +109,7 @@ export class App {
     private quitApplication: () => void,
     document = window.document
   ) {
+    this.connectionControl = new ConnectionControl(this.serverRepo);
     this.localize = this.rootEl.localize.bind(this.rootEl);
 
     this.syncServersToUI();
@@ -551,7 +554,7 @@ export class App {
       connectionState: ServerConnectionState.CONNECTING,
     });
     try {
-      await server.connect();
+      await this.connectionControl.connect(server);
       this.updateServerListItem(serverId, {
         connectionState: ServerConnectionState.CONNECTED,
         address: server.address,
@@ -632,13 +635,8 @@ export class App {
       throw new Error('disconnectServer event had no server ID');
     }
 
-    if (
-      this.throttleServerConnectionChange(
-        serverId,
-        DEFAULT_SERVER_CONNECTION_STATUS_CHANGE_TIMEOUT
-      )
-    )
-      return;
+    // Explicit Disconnect must survive a preceding connect click. The shared
+    // connection queue already serializes repeated actions.
 
     const server = this.getServerByServerId(serverId);
     console.log(`disconnecting from server ${serverId}`);
@@ -647,7 +645,7 @@ export class App {
       connectionState: ServerConnectionState.DISCONNECTING,
     });
     try {
-      await server.disconnect();
+      await this.connectionControl.disconnect(server);
       this.updateServerListItem(serverId, {
         connectionState: ServerConnectionState.DISCONNECTED,
       });
@@ -877,6 +875,13 @@ export class App {
 
   private isWindows() {
     return !('cordova' in window);
+  }
+
+  enableDomainExclusions(
+    request: import('../views/domain_exclusions_view').DomainExclusionsView['request']
+  ) {
+    this.rootEl.showDomainExclusions = true;
+    this.rootEl.$.domainExclusionsView.request = request;
   }
 
   private setAppearance(appearance: Appearance) {

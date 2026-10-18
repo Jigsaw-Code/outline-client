@@ -16,20 +16,23 @@ package outline
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net"
 	"os"
 	"path"
 	"runtime"
+	"time"
 
-	"localhost/client/go/configyaml"
-	"localhost/client/go/outline/configregistry"
-	"localhost/client/go/outline/platerrors"
-	"localhost/client/go/outline/reporting"
+	"github.com/goccy/go-yaml"
 	"golang.getoutline.org/sdk/network/packetrelay"
 	"golang.getoutline.org/sdk/transport"
-	"github.com/goccy/go-yaml"
+	"localhost/client/go/configyaml"
+	"localhost/client/go/outline/configregistry"
+	"localhost/client/go/outline/domainbypass"
+	"localhost/client/go/outline/platerrors"
+	"localhost/client/go/outline/reporting"
 )
 
 // Client provides a transparent container for [transport.StreamDialer] and [transport.PacketListener]
@@ -96,8 +99,10 @@ type NewClientResult struct {
 
 // ClientConfig is used to create a session Client.
 type ClientConfig struct {
-	DataDir         string
-	TransportParser *configyaml.TypeParser[*configregistry.TransportPair]
+	// DomainExclusions is local Apple client policy, never supplied by an access key.
+	DomainExclusions string
+	DataDir          string
+	TransportParser  *configyaml.TypeParser[*configregistry.TransportPair]
 }
 
 // New creates a new session client. It's used by the native code, so it returns a NewClientResult.
@@ -156,6 +161,23 @@ func (c *ClientConfig) new(keyID string, providerClientConfigText string) (*Clie
 	}
 
 	client := &Client{sd: transportPair.StreamDialer, pr: transportPair.PacketRelay}
+	if c.DomainExclusions != "" {
+		rules, err := domainbypass.Parse(c.DomainExclusions)
+		if err != nil {
+			return nil, &platerrors.PlatformError{Code: platerrors.InvalidConfig, Message: err.Error()}
+		}
+		if len(rules.KnownDomains) > 0 {
+			// Network Extension owns these sockets, so they escape its packet tunnel.
+			// Resolve through a direct DNS socket, never through the synthetic resolver.
+			resolver := &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return (&net.Dialer{Timeout: 10 * time.Second}).DialContext(ctx, network, "1.1.1.1:53")
+			}}
+			direct := net.Dialer{Resolver: resolver, Timeout: 10 * time.Second, KeepAlive: -1}
+			router := domainbypass.New(rules, transportPair, transportPair.PacketRelay, &transport.TCPDialer{Dialer: direct}, &direct)
+			client.sd = &configregistry.Dialer[transport.StreamConn]{ConnectionProviderInfo: configregistry.ConnectionProviderInfo{ConnType: configregistry.ConnTypePartial}, Dial: router.DialStream}
+			client.pr = &configregistry.PacketRelay{ConnectionProviderInfo: configregistry.ConnectionProviderInfo{ConnType: configregistry.ConnTypePartial}, PacketRelay: router, NotifyNetworkChanged: transportPair.PacketRelay.NotifyNetworkChanged}
+		}
+	}
 
 	// TODO: figure out a better way to handle parse calls.
 	if providerClientConfig.Reporter != nil {
@@ -186,4 +208,15 @@ func NewReporterParser(cookiesFilename string, streamDialer transport.StreamDial
 	parser.RegisterSubParser("first-supported", configregistry.NewFirstSupportedSubParser(parser.Parse))
 	parser.RegisterSubParser("http", reporting.NewHTTPReporterConfigParser(cookiesFilename, streamDialer))
 	return parser
+}
+
+// NormalizeDomainExclusions validates device-owned rules for the Apple UI and
+// preserves the append-only synthetic address registry across tunnel sessions.
+func NormalizeDomainExclusions(text string) (string, error) {
+	rules, err := domainbypass.Parse(text)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(rules)
+	return string(data), err
 }

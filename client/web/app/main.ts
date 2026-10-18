@@ -122,7 +122,7 @@ export function main(platform: OutlinePlatform) {
       const eventQueue = new EventQueue();
       const serverRepo = await createServerRepo(platform, eventQueue);
       const settings = new Settings();
-      new App(
+      return new App(
         eventQueue,
         serverRepo,
         getRootEl(),
