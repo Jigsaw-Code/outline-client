@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"testing"
 
-	"localhost/client/go/configyaml"
-	"golang.getoutline.org/sdk/transport"
 	"github.com/stretchr/testify/require"
+	"golang.getoutline.org/sdk/transport"
+
+	"localhost/client/go/configyaml"
 )
 
 func TestParseIPTableStreamDialer(t *testing.T) {
@@ -330,4 +331,58 @@ table:
 		require.Contains(t, err.Error(), "failed to parse nested stream dialer fallback")
 		require.Contains(t, err.Error(), "fallback sub-parser failed")
 	})
+}
+
+func TestParseIPTableStreamDialerPreservesFallbackFirstHop(t *testing.T) {
+	ctx := context.Background()
+	const fallbackFirstHop = "proxy.example:443"
+
+	parseSD := func(_ context.Context, config configyaml.ConfigNode) (*Dialer[transport.StreamConn], error) {
+		configMap, ok := config.(map[string]any)
+		if !ok {
+			return nil, errors.New("config is not a map[string]any")
+		}
+
+		name, ok := configMap["name"].(string)
+		if !ok {
+			return nil, errors.New("mock dialer config must have a 'name'")
+		}
+
+		switch name {
+		case "direct":
+			d := &errorStreamDialer{name: "direct"}
+			return &Dialer[transport.StreamConn]{
+				Dial: d.DialStream,
+				ConnectionProviderInfo: ConnectionProviderInfo{
+					ConnType: ConnTypeDirect,
+				},
+			}, nil
+		case "proxy":
+			d := &errorStreamDialer{name: "proxy"}
+			return &Dialer[transport.StreamConn]{
+				Dial: d.DialStream,
+				ConnectionProviderInfo: ConnectionProviderInfo{
+					ConnType: ConnTypeTunneled,
+					FirstHop: fallbackFirstHop,
+				},
+			}, nil
+		default:
+			return nil, fmt.Errorf("unknown mock dialer: %s", name)
+		}
+	}
+
+	configMap := map[string]any{
+		"table": []any{
+			map[string]any{
+				"ips":    []any{"192.168.1.0/24"},
+				"dialer": map[string]any{"name": "direct"},
+			},
+		},
+		"fallback": map[string]any{"name": "proxy"},
+	}
+
+	got, err := parseIPTableStreamDialer(ctx, configMap, parseSD)
+	require.NoError(t, err)
+	require.Equal(t, ConnTypePartial, got.ConnType)
+	require.Equal(t, fallbackFirstHop, got.FirstHop)
 }
