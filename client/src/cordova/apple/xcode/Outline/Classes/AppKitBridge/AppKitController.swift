@@ -17,6 +17,7 @@ import ServiceManagement
 
 class AppKitController: NSObject {
     private var statusItemController: StatusItemController?
+    private var lastConnectionStatus: ConnectionStatus?
     private var windowCloseObserver: NSObjectProtocol?
 
     override public required init() {
@@ -97,10 +98,24 @@ class AppKitController: NSObject {
 
     /// Set the connection status in the app's menu in the system-wide menu bar.
     @objc public func _AppKitBridge_setConnectionStatus(_ status: ConnectionStatus) {
-        if statusItemController == nil {
-            NSLog("[AppKitController] No status item controller found. Creating one now.")
-            statusItemController = StatusItemController()
+        // VPN status notifications may be delivered on any thread. Serialize the
+        // dedup check and the menu update on the main thread so `lastConnectionStatus`
+        // always matches what the menu is actually showing (AppKit also requires
+        // UI updates on the main thread).
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?._AppKitBridge_setConnectionStatus(status)
+            }
+            return
         }
+        if statusItemController == nil {
+            appKitBridgeLogger.info("[AppKitController] No status item controller found. Creating one now.")
+            statusItemController = StatusItemController()
+        } else if lastConnectionStatus == status {
+            // Skip redundant main-thread updates when the status hasn't changed.
+            return
+        }
+        lastConnectionStatus = status
         statusItemController!.setStatus(status: status)
     }
 }

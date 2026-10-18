@@ -14,6 +14,17 @@
 
 import AppKit
 import NetworkExtension
+import os
+
+/// Logger for the AppKit bridge.
+///
+/// Use this instead of `NSLog`. `NSLog` writes synchronously to stderr via `writev`, which can
+/// block the main thread (and hang the app) when the log pipe is backed up. `os.Logger` is
+/// non-blocking.
+let appKitBridgeLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "org.outline.macos.client",
+    category: "AppKitBridge"
+)
 
 @objc
 public enum ConnectionStatus: Int {
@@ -60,7 +71,7 @@ class StatusItemController: NSObject {
     override init() {
         super.init()
 
-        NSLog("[StatusItemController] Creating status menu")
+        appKitBridgeLogger.info("[StatusItemController] Creating status menu")
         StatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         setStatus(status: .disconnected)
 
@@ -79,7 +90,7 @@ class StatusItemController: NSObject {
     }
 
     func setStatus(status: ConnectionStatus) {
-        NSLog("[StatusItemController] Setting status: \(status)")
+        appKitBridgeLogger.info("[StatusItemController] Setting status: \(String(describing: status), privacy: .public)")
         let isConnected = status == .connected
         let appIconImage = isConnected ? AppIconImage.statusConnected : AppIconImage.statusDisconnected
         appIconImage.isTemplate = true
@@ -91,7 +102,7 @@ class StatusItemController: NSObject {
     }
 
     @objc func openApplication(_: AnyObject?) {
-        NSLog("[StatusItemController] Opening application")
+        appKitBridgeLogger.info("[StatusItemController] Opening application")
         NSApp.activate(ignoringOtherApps: true)
         guard let uiWindow = getUiWindow() else {
             return
@@ -102,20 +113,20 @@ class StatusItemController: NSObject {
     }
 
     @objc func closeApplication(_: AnyObject?) {
-        NSLog("[StatusItemController] Closing application")
+        appKitBridgeLogger.info("[StatusItemController] Closing application")
         NotificationCenter.default.post(name: Notification.Name("appQuit"), object: nil)
         NSApplication.shared.terminate(self)
     }
     
     @objc func toggleVpnConnection(_ sender: NSMenuItem) {
-        NSLog("[StatusItemController] Toggle VPN connection")
+        appKitBridgeLogger.info("[StatusItemController] Toggle VPN connection")
         
         Task {
             let managers = try? await NETunnelProviderManager.loadAllFromPreferences()
             
             // Early return if no VPN profile exists
             guard let managers = managers, !managers.isEmpty else {
-                NSLog("[StatusItemController] No VPN profile found, opening app")
+                appKitBridgeLogger.info("[StatusItemController] No VPN profile found, opening app")
                 DispatchQueue.main.async {
                     self.openApplication(nil)
                 }
@@ -123,7 +134,7 @@ class StatusItemController: NSObject {
             }
             
             guard let manager = managers.first else {
-                NSLog("[StatusItemController] Failed to get VPN manager")
+                appKitBridgeLogger.error("[StatusItemController] Failed to get VPN manager")
                 return
             }
             
@@ -132,11 +143,11 @@ class StatusItemController: NSObject {
             
             if isConnectAction {
                 // User clicked "Connect" - attempt to connect regardless of current state
-                NSLog("[StatusItemController] Connecting to VPN tunnel")
+                appKitBridgeLogger.info("[StatusItemController] Connecting to VPN tunnel")
                 do {
                     try manager.connection.startVPNTunnel()
                 } catch {
-                    NSLog("[StatusItemController] Failed to connect VPN: \(error.localizedDescription)")
+                    appKitBridgeLogger.error("[StatusItemController] Failed to connect VPN: \(error.localizedDescription, privacy: .public)")
                     // If connection fails, open the app
                     DispatchQueue.main.async {
                         self.openApplication(nil)
@@ -144,16 +155,16 @@ class StatusItemController: NSObject {
                 }
             } else {
                 // User clicked "Disconnect" - attempt to disconnect regardless of current state
-                NSLog("[StatusItemController] Disconnecting VPN")
+                appKitBridgeLogger.info("[StatusItemController] Disconnecting VPN")
                 
                 // Disable on-demand rules to prevent automatic reconnection, this automatically gets re-enabled if the user clicks the connect button again (regardless of app or menubar)
                 do {
                     try await manager.loadFromPreferences()
                     manager.isOnDemandEnabled = false
                     try await manager.saveToPreferences()
-                    NSLog("[StatusItemController] Disabled on-demand rules")
+                    appKitBridgeLogger.info("[StatusItemController] Disabled on-demand rules")
                 } catch {
-                    NSLog("[StatusItemController] Failed to disable on-demand rules: \(error.localizedDescription)")
+                    appKitBridgeLogger.error("[StatusItemController] Failed to disable on-demand rules: \(error.localizedDescription, privacy: .public)")
                 }
                 
                 manager.connection.stopVPNTunnel()
