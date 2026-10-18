@@ -62,6 +62,11 @@ export class GoVpnTunnel implements VpnTunnel {
 
   private reconnectedListener?: () => void;
 
+  // Serializes tun2socks restarts. Network change and resume events can fire in rapid
+  // succession; running restarts concurrently would race on launching the tun2socks process.
+  private restartInFlight?: Promise<void>;
+  private restartPending = false;
+
   constructor(
     private readonly routing: RoutingDaemon,
     readonly keyId: string,
@@ -141,7 +146,9 @@ export class GoVpnTunnel implements VpnTunnel {
 
       // Test whether UDP availability has changed; since it won't change 99% of the time, do this
       // *after* we've informed the client we've reconnected.
-      void this.updateUdpAndRestartTun2socks();
+      this.updateUdpAndRestartTun2socks().catch(e => {
+        console.error('failed to restart tun2socks after network change:', e);
+      });
     } else if (status === TunnelStatus.RECONNECTING) {
       if (this.reconnectingListener) {
         this.reconnectingListener();
@@ -184,7 +191,48 @@ export class GoVpnTunnel implements VpnTunnel {
     }
   }
 
-  private async updateUdpAndRestartTun2socks() {
+  // Coalesces concurrent restart requests: if a restart is already running, the request is
+  // recorded and a single follow-up restart is performed once the current one completes.
+  private updateUdpAndRestartTun2socks(): Promise<void> {
+    if (this.restartInFlight) {
+      this.restartPending = true;
+      return this.restartInFlight;
+    }
+    this.restartInFlight = (async () => {
+      try {
+        let lastError: unknown = undefined;
+        do {
+          this.restartPending = false;
+          if (this.disconnected) {
+            return;
+          }
+          try {
+            lastError = undefined;
+            await this.doUpdateUdpAndRestartTun2socks();
+          } catch (e) {
+            // Don't drop a restart requested while this attempt was running: if one is
+            // pending, try again; otherwise surface the failure to the caller.
+            lastError = e;
+            if (this.restartPending) {
+              console.error(
+                'tun2socks restart failed; retrying pending restart:',
+                e
+              );
+            }
+          }
+        } while (this.restartPending);
+        if (lastError !== undefined) {
+          throw lastError;
+        }
+      } finally {
+        this.restartPending = false;
+        this.restartInFlight = undefined;
+      }
+    })();
+    return this.restartInFlight;
+  }
+
+  private async doUpdateUdpAndRestartTun2socks() {
     try {
       if (IS_WINDOWS) {
         this.isUdpEnabled = await checkUDPConnectivityWindows(
