@@ -307,8 +307,9 @@ export class AppRoot extends mixinBehaviors(
         pattern="/:page"
         data="{{routeData}}"
       ></app-route>
-      <app-header-layout fullbleed="">
+      <app-header-layout id="headerLayout" fullbleed="">
         <root-header
+          id="header"
           slot="header"
           localize="[[localize]]"
           title$="[[localize(pageTitleKey)]]"
@@ -607,6 +608,18 @@ export class AppRoot extends mixinBehaviors(
   ready() {
     super.ready();
     this.setLanguage(this.language);
+
+    // app-header-layout measures the header once, in the frame after it
+    // attaches, and only re-measures on a window resize. root-header grows by
+    // the top safe-area inset, which a full-screen WebView (Capacitor on iOS)
+    // can report after that first measurement, leaving the content offset for
+    // a header height that is no longer true and hiding the first server card
+    // under the header. Re-run the layout whenever the header's size changes.
+    if (globalThis.ResizeObserver) {
+      new globalThis.ResizeObserver(() =>
+        this.$.headerLayout.resetLayout()
+      ).observe(this.$.header);
+    }
 
     // Workaround for paper-behaviors' craptastic keyboard focus detection:
     // https://github.com/PolymerElements/paper-behaviors/issues/80
