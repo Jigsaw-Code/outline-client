@@ -56,6 +56,20 @@ declare const APP_VERSION: string;
 // Run-time environment variables:
 const debugMode = process.env.OUTLINE_DEBUG === 'true';
 
+// Prevent fatal crashes when the terminal that launched the app is closed on
+// Linux. Closing the terminal breaks the stdout/stderr pipe, causing any
+// subsequent console.log/error call to throw EPIPE. Without this handler,
+// Node.js propagates the error as an unhandled fatal exception and the process
+// exits. EPIPE is swallowed silently here — writing to either stream inside
+// these handlers risks triggering another EPIPE and looping indefinitely.
+// All other errors are re-thrown.
+process.stdout.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code !== 'EPIPE') throw err;
+});
+process.stderr.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code !== 'EPIPE') throw err;
+});
+
 const IS_LINUX = os.platform() === 'linux';
 const IS_WINDOWS = os.platform() === 'win32';
 
