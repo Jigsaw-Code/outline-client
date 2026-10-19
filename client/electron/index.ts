@@ -60,20 +60,14 @@ const debugMode = process.env.OUTLINE_DEBUG === 'true';
 // Linux. Closing the terminal breaks the stdout/stderr pipe, causing any
 // subsequent console.log/error call to throw EPIPE. Without this handler,
 // Node.js propagates the error as an unhandled fatal exception and the process
-// exits. We log and swallow EPIPE while re-throwing everything else.
+// exits. EPIPE is swallowed silently here — writing to either stream inside
+// these handlers risks triggering another EPIPE and looping indefinitely.
+// All other errors are re-thrown.
 process.stdout.on('error', (err: NodeJS.ErrnoException) => {
-  if (err.code === 'EPIPE') {
-    console.error('Ignoring EPIPE on stdout:', err);
-    return;
-  }
-  throw err;
+  if (err.code !== 'EPIPE') throw err;
 });
 process.stderr.on('error', (err: NodeJS.ErrnoException) => {
-  if (err.code === 'EPIPE') {
-    console.error('Ignoring EPIPE on stderr:', err);
-    return;
-  }
-  throw err;
+  if (err.code !== 'EPIPE') throw err;
 });
 
 const IS_LINUX = os.platform() === 'linux';
