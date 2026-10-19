@@ -62,11 +62,17 @@ export class GoVpnTunnel implements VpnTunnel {
 
   private reconnectedListener?: () => void;
 
-  // Guards against concurrent calls to updateUdpAndRestartTun2socks().
+  // Serialises calls to updateUdpAndRestartTun2socks().
   // On Windows, both the 'resume' power event and a routing-daemon CONNECTED
   // event can fire simultaneously after a system sleep, which would otherwise
   // cause two parallel launch() calls and a "already been launched" error.
+  //
+  // isRestartingTun2socks: true while a restart is actively running.
+  // pendingTun2socksRestart: true when a second call arrived during a restart,
+  //   so that any adapter or UDP-state change captured in the interim is not
+  //   silently discarded — the loop re-runs once the current restart finishes.
   private isRestartingTun2socks = false;
+  private pendingTun2socksRestart = false;
 
   constructor(
     private readonly routing: RoutingDaemon,
@@ -191,43 +197,48 @@ export class GoVpnTunnel implements VpnTunnel {
   }
 
   private async updateUdpAndRestartTun2socks() {
-    // A concurrent restart is already in progress (e.g. resume + network-change
-    // both fired at the same time).  The ongoing restart will complete with
-    // up-to-date state, so it is safe to drop this duplicate call.
     if (this.isRestartingTun2socks) {
-      console.log(
-        'tun2socks restart already in progress; skipping duplicate restart request'
-      );
+      // A restart is already running.  Mark that another one is needed so that
+      // any adapter or UDP-state change captured in the interim (e.g. a new
+      // gatewayAdapterIndex written by networkChanged()) is not discarded.
+      this.pendingTun2socksRestart = true;
       return;
     }
 
     this.isRestartingTun2socks = true;
     try {
-      try {
-        if (IS_WINDOWS) {
-          this.isUdpEnabled = await checkUDPConnectivityWindows(
-            this.clientConfig,
-            this.gatewayAdapterIndex,
-            this.isDebugMode
-          );
-        } else {
-          this.isUdpEnabled = await checkUDPConnectivity(
-            this.clientConfig,
-            this.isDebugMode
-          );
-        }
-        console.log(`UDP support now ${this.isUdpEnabled}`);
-      } catch (e) {
-        console.error('connectivity check failed:', e);
-      }
+      // Loop so that a queued follow-up restart (pendingTun2socksRestart) is
+      // honoured once the current run finishes, without allowing more than one
+      // extra restart to accumulate.
+      do {
+        this.pendingTun2socksRestart = false;
 
-      // Restart tun2socks.
-      try {
-        await this.tun2socks.stop();
-      } catch {
-        // Ignore the errors
-      }
-      await this.startTun2socks();
+        try {
+          if (IS_WINDOWS) {
+            this.isUdpEnabled = await checkUDPConnectivityWindows(
+              this.clientConfig,
+              this.gatewayAdapterIndex,
+              this.isDebugMode
+            );
+          } else {
+            this.isUdpEnabled = await checkUDPConnectivity(
+              this.clientConfig,
+              this.isDebugMode
+            );
+          }
+          console.log(`UDP support now ${this.isUdpEnabled}`);
+        } catch (e) {
+          console.error('connectivity check failed:', e);
+        }
+
+        // Restart tun2socks.
+        try {
+          await this.tun2socks.stop();
+        } catch {
+          // Ignore the errors
+        }
+        await this.startTun2socks();
+      } while (this.pendingTun2socksRestart);
     } finally {
       this.isRestartingTun2socks = false;
     }
