@@ -76,5 +76,10 @@ export async function buildWebBundle({
   await fs.mkdir(outputDir, {recursive: true});
 
   await writeEnvironmentJson(capacitorDir, versionName, buildNumber, sentryDsn);
-  await runWebpack({...webpackConfig, mode: getWebpackBuildMode(buildMode)});
+  await runWebpack({
+    ...webpackConfig,
+    mode: getWebpackBuildMode(buildMode),
+    // emit source maps only for debug builds.
+    devtool: buildMode === 'debug' ? 'source-map' : false,
+  });
 }

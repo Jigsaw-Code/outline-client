@@ -28,7 +28,6 @@ export default ({sentryDsn, appVersion}) => [
       __dirname: false,
       __filename: false,
     },
-    devtool: 'inline-source-map',
     module: {
       rules: [
         {
@@ -59,7 +58,6 @@ export default ({sentryDsn, appVersion}) => [
   {
     entry: './client/electron/preload.ts',
     target: 'electron-preload',
-    devtool: 'inline-source-map',
     module: {
       rules: [
         {

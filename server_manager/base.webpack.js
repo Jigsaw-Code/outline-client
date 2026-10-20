@@ -42,7 +42,8 @@ exports.makeConfig = options => {
       options.main,
     ],
     target: options.target,
-    devtool: 'inline-source-map',
+    // emit source maps only for debug builds.
+    devtool: options.defaultMode === 'production' ? false : 'inline-source-map',
     // Run the dev server with `npm run webpack-dev-server --workspace=outline-manager --open`
     devServer: {
       client: {

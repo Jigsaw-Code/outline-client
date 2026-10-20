@@ -16,6 +16,7 @@ import {merge} from 'webpack-merge';
 import {baseConfig, TS_LOADER} from './webpack_base.mjs';
 
 export default merge(baseConfig, {
+  devtool: 'inline-source-map',
   module: {
     rules: [
       {

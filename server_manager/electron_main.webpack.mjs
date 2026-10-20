@@ -20,14 +20,15 @@ import nodeExternals from 'webpack-node-externals';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default {
+// emit source maps only for debug builds.
+export default (env, argv) => ({
+  devtool: argv.mode === 'development' ? 'inline-source-map' : false,
   entry: path.resolve(__dirname, './electron/index.ts'),
   target: 'electron-main',
   node: {
     __dirname: false,
     __filename: false,
   },
-  devtool: 'inline-source-map',
   output: {
     path: path.resolve(
       __dirname,
@@ -54,4 +55,4 @@ export default {
   ],
   // don't bundle packages in node_modules
   externals: [nodeExternals()],
-};
+});

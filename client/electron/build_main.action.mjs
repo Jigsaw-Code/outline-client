@@ -47,6 +47,7 @@ export async function main(...parameters) {
       config => ({
         ...config,
         mode: getWebpackBuildMode(buildMode),
+        devtool: buildMode === 'debug' ? 'inline-source-map' : false,
       })
     )
   );
