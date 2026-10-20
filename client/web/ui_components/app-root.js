@@ -19,8 +19,6 @@ import '@material/web/all.js';
 import '@polymer/polymer/polymer-legacy.js';
 import '@polymer/polymer/lib/legacy/polymer.dom.js';
 import '@polymer/app-layout/app-drawer/app-drawer.js';
-import '@polymer/app-layout/app-header/app-header.js';
-import '@polymer/app-layout/app-header-layout/app-header-layout.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/app-route/app-location.js';
 import '@polymer/app-route/app-route.js';
@@ -98,22 +96,20 @@ export class AppRoot extends mixinBehaviors(
           --light-gray: #ececec;
           --paper-dialog-button-color: var(--medium-green);
           --app-drawer-width: 280px;
+          /* The header and the page are a plain flex column that fills the
+           * viewport. The header takes whatever height its content needs,
+           * including the top safe-area inset it pads itself with, and the
+           * page gets the rest; nothing is measured. */
           display: flex;
           flex-direction: column;
+          height: 100vh;
           font-family: var(--outline-font-family);
           color: var(--outline-text-color);
           background-color: var(--outline-background);
         }
 
-        app-header {
-          height: var(--app-header-height);
-        }
-
-        app-header h1 {
-          font-family: Jigsaw Sans;
-          font-size: 1.5rem;
-          font-weight: 500;
-          margin: 0;
+        root-header {
+          flex: none;
         }
 
         app-toolbar {
@@ -151,6 +147,9 @@ export class AppRoot extends mixinBehaviors(
         iron-pages {
           display: flex;
           flex: 1;
+          /* Let the page shrink to the space below the header and scroll. */
+          min-height: 0;
+          overflow-y: auto;
           background-color: var(--outline-background);
           color: var(--outline-text-color);
         }
@@ -307,64 +306,61 @@ export class AppRoot extends mixinBehaviors(
         pattern="/:page"
         data="{{routeData}}"
       ></app-route>
-      <app-header-layout fullbleed="">
-        <root-header
-          slot="header"
-          localize="[[localize]]"
-          title$="[[localize(pageTitleKey)]]"
-          show-back-button="[[shouldShowBackButton]]"
-          show-add-button="[[shouldShowAddButton]]"
-        ></root-header>
+      <root-header
+        localize="[[localize]]"
+        title$="[[localize(pageTitleKey)]]"
+        show-back-button="[[shouldShowBackButton]]"
+        show-add-button="[[shouldShowAddButton]]"
+      ></root-header>
 
-        <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
-          <servers-view
-            name="home"
-            id="serversView"
-            dark-mode="[[darkMode]]"
-            servers="[[servers]]"
-            localize="[[localize]]"
-            should-show-access-key-wiki-link="[[useAltAccessMessage]]"
-            on-add-server="promptAddServer"
-          ></servers-view>
-          <contact-view
-            name="contact"
-            id="contactView"
-            localize="[[localize]]"
-            error-reporter="[[errorReporter]]"
-            on-success="showContactSuccessToast"
-            on-error="showContactErrorToast"
-          ></contact-view>
-          <about-view
-            name="about"
-            id="aboutView"
-            dark-mode="[[darkMode]]"
-            localize="[[localize]]"
-            root-path="[[rootPath]]"
-            version="[[appVersion]]"
-            build="[[appBuild]]"
-          ></about-view>
-          <language-view
-            name="language"
-            id="aboutView"
-            selected-language-id="[[language]]"
-            languages="[[_getLanguagesAvailableValues(LANGUAGES_AVAILABLE)]]"
-          ></language-view>
-          <!-- Do not mirror licenses text, as it is not localized. -->
-          <licenses-view
-            name="licenses"
-            id="licensesView"
-            dir="ltr"
-            localize="[[localize]]"
-            root-path="[[rootPath]]"
-          ></licenses-view>
-          <appearance-view
-            name="appearance"
-            id="appearanceView"
-            selected-appearance="[[selectedAppearance]]"
-            localize="[[localize]]"
-          ></appearance-view>
-        </iron-pages>
-      </app-header-layout>
+      <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
+        <servers-view
+          name="home"
+          id="serversView"
+          dark-mode="[[darkMode]]"
+          servers="[[servers]]"
+          localize="[[localize]]"
+          should-show-access-key-wiki-link="[[useAltAccessMessage]]"
+          on-add-server="promptAddServer"
+        ></servers-view>
+        <contact-view
+          name="contact"
+          id="contactView"
+          localize="[[localize]]"
+          error-reporter="[[errorReporter]]"
+          on-success="showContactSuccessToast"
+          on-error="showContactErrorToast"
+        ></contact-view>
+        <about-view
+          name="about"
+          id="aboutView"
+          dark-mode="[[darkMode]]"
+          localize="[[localize]]"
+          root-path="[[rootPath]]"
+          version="[[appVersion]]"
+          build="[[appBuild]]"
+        ></about-view>
+        <language-view
+          name="language"
+          id="aboutView"
+          selected-language-id="[[language]]"
+          languages="[[_getLanguagesAvailableValues(LANGUAGES_AVAILABLE)]]"
+        ></language-view>
+        <!-- Do not mirror licenses text, as it is not localized. -->
+        <licenses-view
+          name="licenses"
+          id="licensesView"
+          dir="ltr"
+          localize="[[localize]]"
+          root-path="[[rootPath]]"
+        ></licenses-view>
+        <appearance-view
+          name="appearance"
+          id="appearanceView"
+          selected-appearance="[[selectedAppearance]]"
+          localize="[[localize]]"
+        ></appearance-view>
+      </iron-pages>
 
       <root-navigation
         localize="[[localize]]"

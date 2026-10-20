@@ -28,7 +28,7 @@ export class LicensesView extends LitElement {
       height: 100%;
       overflow-x: hidden;
       overflow-y: scroll;
-      padding: calc(12px + var(--outline-safe-area-top)) 12px 12px 12px;
+      padding: 12px;
       width: 100%;
     }
 
