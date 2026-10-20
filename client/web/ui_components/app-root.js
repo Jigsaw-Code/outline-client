@@ -321,7 +321,12 @@ export class AppRoot extends mixinBehaviors(
           show-add-button="[[shouldShowAddButton]]"
         ></root-header>
 
-        <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
+        <iron-pages
+          id="pages"
+          selected="[[page]]"
+          attr-for-selected="name"
+          on-iron-select="_resetPageScroll"
+        >
           <servers-view
             name="home"
             id="serversView"
@@ -719,6 +724,12 @@ export class AppRoot extends mixinBehaviors(
       }
       this.$.toast.open();
     }, 350);
+  }
+
+  // iron-pages is the pages' shared scroll container: start every page at
+  // the top instead of where the previous page was scrolled to.
+  _resetPageScroll() {
+    this.$.pages.scrollTop = 0;
   }
 
   changePage(page) {
