@@ -96,16 +96,23 @@ export class AppRoot extends mixinBehaviors(
           --light-gray: #ececec;
           --paper-dialog-button-color: var(--medium-green);
           --app-drawer-width: 280px;
-          /* The header and the page are a plain flex column that fills the
-           * viewport. The header takes whatever height its content needs,
-           * including the top safe-area inset it pads itself with, and the
-           * page gets the rest; nothing is measured. */
           display: flex;
           flex-direction: column;
-          height: 100vh;
           font-family: var(--outline-font-family);
           color: var(--outline-text-color);
           background-color: var(--outline-background);
+        }
+
+        /* The header and the page are a plain flex column pinned to the
+         * viewport. The header takes whatever height its content needs,
+         * including the top safe-area inset it pads itself with, and the page
+         * gets the rest; nothing is measured. The dialogs and the drawer are
+         * siblings that overlay it. */
+        #layout {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
         }
 
         root-header {
@@ -306,61 +313,63 @@ export class AppRoot extends mixinBehaviors(
         pattern="/:page"
         data="{{routeData}}"
       ></app-route>
-      <root-header
-        localize="[[localize]]"
-        title$="[[localize(pageTitleKey)]]"
-        show-back-button="[[shouldShowBackButton]]"
-        show-add-button="[[shouldShowAddButton]]"
-      ></root-header>
+      <div id="layout">
+        <root-header
+          localize="[[localize]]"
+          title$="[[localize(pageTitleKey)]]"
+          show-back-button="[[shouldShowBackButton]]"
+          show-add-button="[[shouldShowAddButton]]"
+        ></root-header>
 
-      <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
-        <servers-view
-          name="home"
-          id="serversView"
-          dark-mode="[[darkMode]]"
-          servers="[[servers]]"
-          localize="[[localize]]"
-          should-show-access-key-wiki-link="[[useAltAccessMessage]]"
-          on-add-server="promptAddServer"
-        ></servers-view>
-        <contact-view
-          name="contact"
-          id="contactView"
-          localize="[[localize]]"
-          error-reporter="[[errorReporter]]"
-          on-success="showContactSuccessToast"
-          on-error="showContactErrorToast"
-        ></contact-view>
-        <about-view
-          name="about"
-          id="aboutView"
-          dark-mode="[[darkMode]]"
-          localize="[[localize]]"
-          root-path="[[rootPath]]"
-          version="[[appVersion]]"
-          build="[[appBuild]]"
-        ></about-view>
-        <language-view
-          name="language"
-          id="aboutView"
-          selected-language-id="[[language]]"
-          languages="[[_getLanguagesAvailableValues(LANGUAGES_AVAILABLE)]]"
-        ></language-view>
-        <!-- Do not mirror licenses text, as it is not localized. -->
-        <licenses-view
-          name="licenses"
-          id="licensesView"
-          dir="ltr"
-          localize="[[localize]]"
-          root-path="[[rootPath]]"
-        ></licenses-view>
-        <appearance-view
-          name="appearance"
-          id="appearanceView"
-          selected-appearance="[[selectedAppearance]]"
-          localize="[[localize]]"
-        ></appearance-view>
-      </iron-pages>
+        <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
+          <servers-view
+            name="home"
+            id="serversView"
+            dark-mode="[[darkMode]]"
+            servers="[[servers]]"
+            localize="[[localize]]"
+            should-show-access-key-wiki-link="[[useAltAccessMessage]]"
+            on-add-server="promptAddServer"
+          ></servers-view>
+          <contact-view
+            name="contact"
+            id="contactView"
+            localize="[[localize]]"
+            error-reporter="[[errorReporter]]"
+            on-success="showContactSuccessToast"
+            on-error="showContactErrorToast"
+          ></contact-view>
+          <about-view
+            name="about"
+            id="aboutView"
+            dark-mode="[[darkMode]]"
+            localize="[[localize]]"
+            root-path="[[rootPath]]"
+            version="[[appVersion]]"
+            build="[[appBuild]]"
+          ></about-view>
+          <language-view
+            name="language"
+            id="aboutView"
+            selected-language-id="[[language]]"
+            languages="[[_getLanguagesAvailableValues(LANGUAGES_AVAILABLE)]]"
+          ></language-view>
+          <!-- Do not mirror licenses text, as it is not localized. -->
+          <licenses-view
+            name="licenses"
+            id="licensesView"
+            dir="ltr"
+            localize="[[localize]]"
+            root-path="[[rootPath]]"
+          ></licenses-view>
+          <appearance-view
+            name="appearance"
+            id="appearanceView"
+            selected-appearance="[[selectedAppearance]]"
+            localize="[[localize]]"
+          ></appearance-view>
+        </iron-pages>
+      </div>
 
       <root-navigation
         localize="[[localize]]"
