@@ -65,7 +65,7 @@ public class OutlineLogger {
   public static Collection<String> getVpnProcessLogs(int maxNumLogs) {
     // Retrieve the logs by filtering known VPN process tags at INFO level.
     final String LOGCAT_CMD =
-        "logcat -d -s VpnTunnel:I VpnTunnelService:I VpnTunnelStore:I tun2socks:I";
+        "logcat -d -s VpnTunnel:I VpnTunnelService:I VpnTunnelStore:I tun2socks:I QuickSettingsTileService:W";
     // Use an FIFO evicting queue to hold the most recent `maxNumLogs` logs.
     Queue<String> logs = new CircularFifoQueue<>(maxNumLogs);
     try {

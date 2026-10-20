@@ -43,9 +43,16 @@ public class QuickSettingsTileService extends TileService {
   private boolean statusReceiverRegistered;
 
   public static void requestTileUpdate(Context context) {
-    TileService.requestListeningState(
-        context,
-        new ComponentName(context, QuickSettingsTileService.class));
+    try {
+      TileService.requestListeningState(
+          context,
+          new ComponentName(context, QuickSettingsTileService.class));
+    } catch (IllegalArgumentException e) {
+      // On multi-user Android devices, this can be called from a background user context,
+      // which Android rejects with "User N is not the current user". Skipping the tile
+      // update is safe — the tile will refresh when the user becomes foreground again.
+      LOG.warning("Skipping tile update: not the foreground user. " + e.getMessage());
+    }
   }
 
   @Override
