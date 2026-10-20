@@ -40,16 +40,15 @@ export class ServerList extends LitElement {
   static styles = [
     css`
       :host {
+        /* A flex item of app-root's page area: it is stretched to the space
+         * below the header (no percentage height to go stale) and the page
+         * area scrolls when the list is longer than that. */
         display: flex;
         flex-direction: column;
         font-size: 0.9rem;
-        /* Fill the space app-root leaves below the header and scroll inside it. */
-        height: 100%;
-        justify-content: center;
         line-height: 1.25rem;
-        margin: auto;
+        margin: 0 auto;
         max-width: 400px;
-        overflow-y: auto;
         width: 100%;
       }
       :host a {
