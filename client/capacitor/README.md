@@ -76,6 +76,8 @@ npm run assets:generate
 
 The script runs `capacitor-assets generate` once per platform rather than a single `--android --ios` invocation: combining the flags changes the generated Android PNGs (the platform runs are not isolated inside the tool), which would break reproducibility against the committed `res/` files.
 
+It then runs `optimize_png.mjs` over the generated files, which losslessly recompresses every PNG in place (`capacitor-assets` writes them with a fast zlib setting, which more than doubles their size). The pixels are unchanged, so the result is still reproducible; skip this step and the next regeneration will show every PNG as modified.
+
 then re-add license headers to the regenerated adaptive-icon XMLs (from the repo root):
 
 ```sh
