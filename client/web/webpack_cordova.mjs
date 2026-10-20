@@ -45,6 +45,15 @@ export default merge(baseConfig, browserConfig, {
   module: {
     rules: [
       {
+        // Sentry's SQL sanitizer contains RegExp lookbehind, which prevents the
+        // entire UI bundle from parsing in the WebViews on macOS 12 / iOS 15.
+        test: /[/\\]@sentry[/\\]core[/\\]build[/\\](?:esm|cjs)[/\\]integrations[/\\]postgresjs\.js$/,
+        enforce: 'pre',
+        use: [
+          path.resolve(__dirname, 'webpack_sentry_webkit_compat_loader.cjs'),
+        ],
+      },
+      {
         test: /\.m?ts$/,
         exclude: /node_modules/,
         use: [BABEL_LOADER, TS_LOADER, GENERATE_CSS_RTL_LOADER],

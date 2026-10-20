@@ -48,6 +48,9 @@ jobs:
       - name: Install NPM Dependencies
         run: npm set cache .npm && npm ci
 
+      - name: Test Webpack WebKit compatibility workaround
+        run: node --test client/web/webpack_sentry_webkit_compat_loader.test.mjs
+
       - name: Build Web App
         run: npm run action client/web/build
 
