@@ -154,11 +154,16 @@ export class AppRoot extends mixinBehaviors(
         iron-pages {
           display: flex;
           flex: 1;
-          /* Let the page shrink to the space below the header and scroll. */
+          /* Let the pages shrink to the space below the header. */
           min-height: 0;
-          overflow-y: auto;
           background-color: var(--outline-background);
           color: var(--outline-text-color);
+        }
+
+        /* Each page is its own scroll container, stretched to the pages area,
+         * so pages never share a scroll position (each keeps its own). */
+        iron-pages > * {
+          overflow-y: auto;
         }
 
         appearance-view {
@@ -321,12 +326,7 @@ export class AppRoot extends mixinBehaviors(
           show-add-button="[[shouldShowAddButton]]"
         ></root-header>
 
-        <iron-pages
-          id="pages"
-          selected="[[page]]"
-          attr-for-selected="name"
-          on-iron-select="_resetPageScroll"
-        >
+        <iron-pages id="pages" selected="[[page]]" attr-for-selected="name">
           <servers-view
             name="home"
             id="serversView"
@@ -724,12 +724,6 @@ export class AppRoot extends mixinBehaviors(
       }
       this.$.toast.open();
     }, 350);
-  }
-
-  // iron-pages is the pages' shared scroll container: start every page at
-  // the top instead of where the previous page was scrolled to.
-  _resetPageScroll() {
-    this.$.pages.scrollTop = 0;
   }
 
   changePage(page) {
