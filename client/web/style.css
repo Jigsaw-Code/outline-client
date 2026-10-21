@@ -24,6 +24,14 @@ body {
     the browser agent from insetting the main window weirdly.
   */
   margin: 0;
+  /* Reserve a gutter for overlay scrollbars (e.g. macOS Catalyst), which never
+   * reserve their own layout space and otherwise paint over page content flush
+   * against the document's edge. Every page scrolls at the document level
+   * (see #2903), so this lives on body rather than any one view. A logical
+   * property keeps the gutter on the scrollbar's actual side in RTL layouts.
+   * See #2907.
+   */
+  padding-inline-end: 12px;
 }
 
 :root {
