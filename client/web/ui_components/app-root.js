@@ -106,8 +106,8 @@ export class AppRoot extends mixinBehaviors(
         /* The header and the page are a plain flex column pinned to the
          * viewport. The header takes whatever height its content needs,
          * including the top safe-area inset it pads itself with, and the page
-         * gets the rest; nothing is measured. The dialogs and the drawer are
-         * siblings that overlay it. */
+         * gets the rest. The dialogs and the drawer are siblings that overlay
+         * it. */
         #layout {
           position: absolute;
           inset: 0;
