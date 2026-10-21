@@ -160,8 +160,7 @@ export class AppRoot extends mixinBehaviors(
           color: var(--outline-text-color);
         }
 
-        /* Each page is its own scroll container, stretched to the pages area,
-         * so pages never share a scroll position (each keeps its own). */
+        /* Each page is its own scroll container, stretched to the pages area. */
         iron-pages > * {
           overflow-y: auto;
         }
