@@ -28,7 +28,6 @@ body {
 
 :root {
   /* tokens */
-  --outline-safe-area-top: 0px;
   --min-supported-device-width: 320px;
 
   --outline-primary: hsl(170, 60%, 46%);
@@ -146,19 +145,6 @@ body {
   --outline-input-border: var(--outline-medium-gray);
 
   color-scheme: light;
-}
-
-/* Safe area inset for iOS notch/status bar - defined once at root level */
-@supports (padding-top: constant(safe-area-inset-top)) {
-  :root {
-    --outline-safe-area-top: constant(safe-area-inset-top);
-  }
-}
-
-@supports (padding-top: env(safe-area-inset-top)) {
-  :root {
-    --outline-safe-area-top: env(safe-area-inset-top);
-  }
 }
 
 /* Class-based dark mode - applied when user selects dark theme */

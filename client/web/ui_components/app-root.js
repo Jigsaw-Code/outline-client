@@ -19,8 +19,6 @@ import '@material/web/all.js';
 import '@polymer/polymer/polymer-legacy.js';
 import '@polymer/polymer/lib/legacy/polymer.dom.js';
 import '@polymer/app-layout/app-drawer/app-drawer.js';
-import '@polymer/app-layout/app-header/app-header.js';
-import '@polymer/app-layout/app-header-layout/app-header-layout.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/app-route/app-location.js';
 import '@polymer/app-route/app-route.js';
@@ -105,15 +103,20 @@ export class AppRoot extends mixinBehaviors(
           background-color: var(--outline-background);
         }
 
-        app-header {
-          height: var(--app-header-height);
+        /* The header and the page are a plain flex column pinned to the
+         * viewport. The header takes whatever height its content needs,
+         * including the top safe-area inset it pads itself with, and the page
+         * gets the rest. The dialogs and the drawer are siblings that overlay
+         * it. */
+        #layout {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
         }
 
-        app-header h1 {
-          font-family: Jigsaw Sans;
-          font-size: 1.5rem;
-          font-weight: 500;
-          margin: 0;
+        root-header {
+          flex: none;
         }
 
         app-toolbar {
@@ -151,8 +154,15 @@ export class AppRoot extends mixinBehaviors(
         iron-pages {
           display: flex;
           flex: 1;
+          /* Let the pages shrink to the space below the header. */
+          min-height: 0;
           background-color: var(--outline-background);
           color: var(--outline-text-color);
+        }
+
+        /* Each page is its own scroll container, stretched to the pages area. */
+        iron-pages > * {
+          overflow-y: auto;
         }
 
         appearance-view {
@@ -307,9 +317,8 @@ export class AppRoot extends mixinBehaviors(
         pattern="/:page"
         data="{{routeData}}"
       ></app-route>
-      <app-header-layout fullbleed="">
+      <div id="layout">
         <root-header
-          slot="header"
           localize="[[localize]]"
           title$="[[localize(pageTitleKey)]]"
           show-back-button="[[shouldShowBackButton]]"
@@ -364,7 +373,7 @@ export class AppRoot extends mixinBehaviors(
             localize="[[localize]]"
           ></appearance-view>
         </iron-pages>
-      </app-header-layout>
+      </div>
 
       <root-navigation
         localize="[[localize]]"

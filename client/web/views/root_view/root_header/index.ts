@@ -27,9 +27,11 @@ export class RootHeader extends LitElement {
       justify-content: space-between;
       background-color: var(--outline-dark-primary);
       display: flex;
-      box-sizing: border-box;
-      min-height: calc(64px + var(--outline-safe-area-top));
-      padding: var(--outline-safe-area-top) 16px 0 16px;
+      min-height: 64px;
+      /* Where the WebView extends under the status bar (iOS with
+       * viewport-fit=cover), grow by the inset so the bar sits on the header
+       * color. Elsewhere the inset is 0. */
+      padding: env(safe-area-inset-top, 0px) 16px 0 16px;
     }
 
     h1 {

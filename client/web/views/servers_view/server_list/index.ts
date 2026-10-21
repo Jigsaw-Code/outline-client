@@ -27,7 +27,6 @@ export class ServerList extends LitElement {
       :host {
         box-sizing: border-box;
         display: block;
-        height: 100%;
         margin: 0 auto;
         padding: 8px;
         width: 100%;

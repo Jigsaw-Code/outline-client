@@ -38,8 +38,6 @@ export class LanguageView extends LitElement {
       background-color: var(--outline-background);
       color: var(--outline-text-color);
       display: block;
-      box-sizing: border-box;
-      padding-top: var(--outline-safe-area-top);
     }
 
     md-list {
