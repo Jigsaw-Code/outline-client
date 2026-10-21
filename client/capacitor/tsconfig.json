@@ -13,6 +13,7 @@
     "webpack.config.js",
     "build.action.mjs",
     "web_build.action.mjs",
+    "optimize_png.mjs",
     "start.action.mjs"
   ],
   "exclude": ["node_modules", "www", "*.cjs"]

@@ -235,8 +235,8 @@ Polymer({
             <div class="section-content-instructions">
               <outline-cloud-instructions-view
                 title="[[localize('gcp-create-project')]]"
-                thumbnail-path="images/gcp-create-project-thumbnail.png"
-                image-path="images/gcp-create-project-screenshot.png"
+                thumbnail-path="images/gcp-create-project-thumbnail.webp"
+                image-path="images/gcp-create-project-screenshot.webp"
                 localize="[[localize]]"
               >
                 <ol>
@@ -251,8 +251,8 @@ Polymer({
             <div class="section-content-instructions">
               <outline-cloud-instructions-view
                 title="[[localize('manual-server-create-firewall')]]"
-                thumbnail-path="images/gcp-thumbnail-1.png"
-                image-path="images/gcp-screenshot-1.png"
+                thumbnail-path="images/gcp-thumbnail-1.webp"
+                image-path="images/gcp-screenshot-1.webp"
                 localize="[[localize]]"
               >
                 <ol>
@@ -270,8 +270,8 @@ Polymer({
             <div class="section-content-instructions">
               <outline-cloud-instructions-view
                 title="[[localize('gcp-create-vm')]]"
-                thumbnail-path="images/gcp-create-instance-thumbnail.png"
-                image-path="images/gcp-create-instance-screenshot.png"
+                thumbnail-path="images/gcp-create-instance-thumbnail.webp"
+                image-path="images/gcp-create-instance-screenshot.webp"
                 localize="[[localize]]"
               >
                 <ol>
@@ -309,8 +309,8 @@ Polymer({
             <div class="section-content-instructions">
               <outline-cloud-instructions-view
                 title="[[localize('manual-server-create-group')]]"
-                thumbnail-path="images/aws-lightsail-thumbnail.png"
-                image-path="images/aws-lightsail-setup.png"
+                thumbnail-path="images/aws-lightsail-thumbnail.webp"
+                image-path="images/aws-lightsail-setup.webp"
                 localize="[[localize]]"
               >
                 <ol>
