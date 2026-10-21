@@ -22,12 +22,11 @@ export class TunnelStore {
   private storagePath: string;
 
   // Creates the store at `storagePath`.
-  constructor(storagePath: string) {
+  constructor(storagePath: string, storageKey = 'connection_store') {
     if (!fs.existsSync(storagePath)) {
       fs.mkdirSync(storagePath);
     }
-    // TODO(alalama): rename key to 'tunnel_store' when performing a data migration.
-    this.storagePath = path.join(storagePath, 'connection_store');
+    this.storagePath = path.join(storagePath, storageKey);
   }
 
   // Persists the tunnel to the store. Rejects the promise on failure.
