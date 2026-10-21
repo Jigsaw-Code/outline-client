@@ -19,8 +19,10 @@ const path = require('path');
 
 const {makeConfig} = require('./base.webpack.js');
 
-module.exports = makeConfig({
-  main: path.resolve(__dirname, './www/main.ts'),
-  target: 'electron-renderer',
-  defaultMode: 'production',
-});
+// The build scripts pass `--mode`; fall back to production when run bare.
+module.exports = (env, argv) =>
+  makeConfig({
+    main: path.resolve(__dirname, './www/main.ts'),
+    target: 'electron-renderer',
+    defaultMode: argv.mode ?? 'production',
+  });

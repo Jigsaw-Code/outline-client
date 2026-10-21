@@ -36,7 +36,6 @@ export const TS_LOADER = {
 };
 
 export const baseConfig = {
-  devtool: 'inline-source-map',
   resolve: {
     extensions: ['.ts', '.js', '.mts', '.mjs'],
     fallback: {url: require.resolve('url/')},
@@ -92,10 +91,7 @@ export const browserConfig = {
   },
   plugins: [
     new CopyPlugin({
-      patterns: [
-        {from: 'assets', to: 'assets', context: __dirname},
-        {from: 'messages', to: 'messages', context: __dirname},
-      ],
+      patterns: [{from: 'messages', to: 'messages', context: __dirname}],
     }),
   ],
 };

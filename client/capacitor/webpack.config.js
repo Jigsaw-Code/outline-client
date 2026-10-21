@@ -84,7 +84,6 @@ export default merge(baseConfig, {
   plugins: [
     new CopyPlugin({
       patterns: [
-        {from: path.resolve(webDir, 'assets'), to: 'assets'},
         {from: path.resolve(webDir, 'messages'), to: 'messages'},
         {
           from: path.resolve(webDir, 'favicon.ico'),

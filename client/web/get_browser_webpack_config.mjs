@@ -41,6 +41,8 @@ export const getBrowserWebpackConfig = (platform, buildMode) => {
   }
 
   webpackConfig.mode = getWebpackBuildMode(buildMode);
+  // emit source maps only for debug builds.
+  webpackConfig.devtool = buildMode === 'debug' ? 'inline-source-map' : false;
 
   return webpackConfig;
 };

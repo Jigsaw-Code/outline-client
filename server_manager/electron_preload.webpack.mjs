@@ -19,10 +19,11 @@ import nodeExternals from 'webpack-node-externals';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default {
+// emit source maps only for debug builds.
+export default (env, argv) => ({
+  devtool: argv.mode === 'development' ? 'inline-source-map' : false,
   entry: path.resolve(__dirname, './electron/preload.ts'),
   target: 'electron-preload',
-  devtool: 'inline-source-map',
   output: {
     path: path.resolve(
       __dirname,
@@ -44,4 +45,4 @@ export default {
   },
   // don't bundle packages in node_modules
   externals: [nodeExternals()],
-};
+});
