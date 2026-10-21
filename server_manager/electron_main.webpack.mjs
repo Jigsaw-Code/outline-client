@@ -20,8 +20,7 @@ import nodeExternals from 'webpack-node-externals';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// The build scripts pass `--mode`; source maps are only useful locally and an
-// inline map more than doubles the size of the bundle packaged into the app.
+// emit source maps only for debug builds.
 export default (env, argv) => ({
   devtool: argv.mode === 'development' ? 'inline-source-map' : false,
   entry: path.resolve(__dirname, './electron/index.ts'),
