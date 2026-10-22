@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// <reference types='../types/webintents.d.ts'/>
-
 type Listener = (url: string) => void;
 
 export class UrlInterceptor {
@@ -39,30 +37,6 @@ export class UrlInterceptor {
     }
     for (const listener of this.listeners) {
       listener(url);
-    }
-  }
-}
-
-export class AndroidUrlInterceptor extends UrlInterceptor {
-  constructor() {
-    super();
-    window.webintent.getUri(launchUrl => {
-      window.webintent.onNewIntent(this.executeListeners.bind(this));
-      this.executeListeners(launchUrl);
-    });
-  }
-}
-
-export class AppleUrlInterceptor extends UrlInterceptor {
-  constructor(launchUrl?: string) {
-    super();
-    // cordova-ios calls a global function with this signature when a URL is intercepted.
-    // We define it in |main.cordova|, redefine it to use this interceptor.
-    window.handleOpenURL = (url: string) => {
-      this.executeListeners(url);
-    };
-    if (launchUrl) {
-      this.executeListeners(launchUrl);
     }
   }
 }

@@ -18,9 +18,6 @@
 // import * as electronMain from './app/main.electron';
 // import * as electronOutlineTunnel from './app/electron_outline_tunnel';
 
-// TODO(daniellacosse): requires cordova context (should be somewhere in src/cordova)
-// import * as cordovaMain from './app/main.cordova';
-
 // TODO(daniellacosse): these modules have side effects, causing them to fail when we import into the test. They need to be encapsulated.
 // import * as main from './app/main';
 // import * as environment from './app/environment';

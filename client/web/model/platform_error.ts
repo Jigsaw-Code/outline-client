@@ -235,7 +235,7 @@ export class PlatformError extends CustomError {
  *
  * @example
  * try {
- *   // cordova plugin calls or electron IPC calls
+ *   // native plugin calls or electron IPC calls
  * } catch (e) {
  *   throw deserializeError(e);
  * }

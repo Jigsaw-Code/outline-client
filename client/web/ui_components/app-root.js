@@ -657,13 +657,11 @@ export class AppRoot extends mixinBehaviors(
       };
     }
 
-    if (typeof cordova === 'undefined') {
-      // If cordova is not defined, we're running in Electron.
-      this.platform = 'Electron';
-    } else {
-      // Don't use cordova?.platformId, ReferenceError will be thrown
-      this.platform = globalThis.cordova.platformId;
-    }
+    // Capacitor exposes its runtime as a global ('ios', 'android' or 'web');
+    // Electron has none.
+    this.platform = globalThis.Capacitor
+      ? globalThis.Capacitor.getPlatform()
+      : 'Electron';
   }
 
   setLanguage(languageCode) {

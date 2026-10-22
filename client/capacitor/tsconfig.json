@@ -11,10 +11,12 @@
     "src",
     "plugins/capacitor-plugin-outline/src",
     "webpack.config.js",
+    "android_universal_apk.mjs",
     "build.action.mjs",
     "web_build.action.mjs",
     "optimize_png.mjs",
-    "start.action.mjs"
+    "start.action.mjs",
+    "test.action.mjs"
   ],
   "exclude": ["node_modules", "www", "*.cjs"]
 }

@@ -43,8 +43,6 @@
     "@sentry/core": "10.75.0",
     "@sentry/electron": "7.20.2",
     "@webcomponents/webcomponentsjs": "^2.4.4",
-    "cordova-plugin-splashscreen": "^6.0.0",
-    "cordova-plugin-statusbar": "^2.2.3",
     "electron-updater": "^5.0.5",
     "element-internals-polyfill": "^1.3.12",
     "fs-extra": "^11.2.0",
@@ -57,44 +55,26 @@
     "web-animations-js": "^2.3.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "@babel/polyfill": "^7.12.1",
-    "@babel/preset-env": "^7.12.11",
     "@commitlint/config-conventional": "^16.2.4",
     "@jsdevtools/coverage-istanbul-loader": "^3.0.5",
     "@open-wc/testing": "^3.2.0",
     "@open-wc/testing-karma": "^4.0.9",
     "@rollup/plugin-image": "^2.1.1",
-    "@types/cordova": "^0.0.34",
     "@types/jasmine": "^4.3.6",
     "@types/node": "^14.14.7",
     "@types/polymer": "^1.2.9",
     "@types/uuidv4": "^2.0.0",
-    "babel-loader": "^8.2.2",
     "chalk": "^5.0.1",
-    "copy-dir": "^1.3.0",
     "copy-webpack-plugin": "^12.0.2",
-    "cordova-android": "^15.1.0",
-    "cordova-browser": "~6.0.0",
-    "cordova-ios": "github:apache/cordova-ios#1a5cd45e2243b239b5045a0ade9d2da1d779b72a",
-    "cordova-lib": "^11.0.0",
-    "cordova-plugin-clipboard": "github:OutlineFoundation/cordova-plugin-clipboard#v2.0.0",
-    "cordova-plugin-outline": "file:src/cordova/plugin",
-    "cordova-webintent": "github:cordova-misc/cordova-webintent#v2.0.0",
     "css-loader": "^5.0.1",
-    "deepmerge": "^4.3.1",
-    "dotenv": "^17.2.2",
     "electron": "30.5.1",
     "electron-builder": "26.8.1",
     "eslint": "^8.15.0",
     "eslint-import-resolver-typescript": "^3.4.0",
     "eslint-plugin-compat": "^4.0.2",
     "eslint-plugin-import": "^2.26.0",
-    "esm": "^3.2.25",
     "file-loader": "^6.2.0",
-    "folder-hash": "^4.0.4",
     "html-webpack-plugin": "^5.1.0",
-    "i18n-strings-files": "^2.0.0",
     "intl-messageformat": "^10.5.14",
     "istanbul": "^0.4.5",
     "karma": "^6.4.2",
@@ -113,8 +93,6 @@
     "pretty-quick": "^2.0.1",
     "puppeteer": "^13.1.2",
     "raw-loader": "^4.0.2",
-    "replace-in-file": "^6.3.5",
-    "rimraf": "^2.7.1",
     "rmfr": "^2.0.0",
     "style-loader": "^2.0.0",
     "terser-webpack-plugin": "^5.3.10",
@@ -123,29 +101,10 @@
     "webpack": "^5.16.0",
     "webpack-cli": "^4.4.0",
     "webpack-dev-server": "^4.5.0",
-    "webpack-merge": "^5.8.0",
-    "webpack-shell-plugin-next": "^2.1.1",
-    "xmlbuilder2": "^3.1.1"
-  },
-  "optionalDependencies": {
-    "ios-deploy": "^1.11.4"
-  },
-  "cordova": {
-    "plugins": {
-      "cordova-plugin-outline": {},
-      "cordova-plugin-splashscreen": {},
-      "cordova-plugin-statusbar": {},
-      "cordova-plugin-clipboard": {},
-      "cordova-webintent": {}
-    },
-    "platforms": [
-      "browser",
-      "ios",
-      "android"
-    ]
+    "webpack-merge": "^5.8.0"
   },
   "scripts": {
-    "clean": "rm -rf output node_modules www platforms plugins",
+    "clean": "rm -rf output node_modules www",
     "lint:lit": "lit-analyzer web/views"
   }
 }

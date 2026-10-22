@@ -1,6 +1,6 @@
 # Electron Development Instructions
 
-Unlike the Android and Apple clients, the Windows and Linux clients use the Electron framework, rather than Cordova.
+Unlike the Android and iOS clients, the Windows and Linux clients use the Electron framework, rather than Capacitor.
 
 To build the Electron clients, run (it will also package an installer executable into `output/client/electron/build`):
 

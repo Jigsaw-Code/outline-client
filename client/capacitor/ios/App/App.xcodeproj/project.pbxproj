@@ -78,7 +78,7 @@
 		6318D1DA2EB1232C006D5B40 /* Tun2socks.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Tun2socks.xcframework; path = ../../../../output/client/apple/Tun2socks.xcframework; sourceTree = SOURCE_ROOT; };
 		63A1E4312EB2451A00EB7643 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
-		AA0100000000000000000001 /* OutlineLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OutlineLib.xcodeproj; path = ../../../src/cordova/apple/OutlineLib/OutlineLib.xcodeproj; sourceTree = SOURCE_ROOT; };
+		AA0100000000000000000001 /* OutlineLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OutlineLib.xcodeproj; path = ../OutlineLib/OutlineLib.xcodeproj; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -201,7 +201,7 @@
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
 				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
-				6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../../../src/cordova/apple/OutlineAppleLib" */,
+				6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../OutlineAppleLib" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -479,9 +479,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../../../src/cordova/apple/OutlineAppleLib" */ = {
+		6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../OutlineAppleLib" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../src/cordova/apple/OutlineAppleLib;
+			relativePath = ../OutlineAppleLib;
 		};
 		D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -497,7 +497,7 @@
 		};
 		6318D1DF2EB1235E006D5B40 /* OutlineAppleLib */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../../../src/cordova/apple/OutlineAppleLib" */;
+			package = 6318D1DE2EB1235E006D5B40 /* XCLocalSwiftPackageReference "../OutlineAppleLib" */;
 			productName = OutlineAppleLib;
 		};
 /* End XCSwiftPackageProductDependency section */

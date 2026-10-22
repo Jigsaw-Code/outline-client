@@ -14,14 +14,7 @@
 
 import minimist from 'minimist';
 
-const VALID_PLATFORMS = [
-  'linux',
-  'windows',
-  'ios',
-  'macos',
-  'android',
-  'browser',
-];
+const VALID_PLATFORMS = ['linux', 'windows', 'ios', 'android', 'browser'];
 const VALID_BUILD_MODES = ['debug', 'release'];
 
 // Every (platform, arch) combination we support building. Acts as the single

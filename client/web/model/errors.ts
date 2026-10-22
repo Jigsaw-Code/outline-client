@@ -113,9 +113,8 @@ export class UnsupportedRoutingTable extends RedFlagNativeError {}
 export class VpnStartFailure extends RedFlagNativeError {}
 
 // This must be kept in sync with:
-//  - cordova-plugin-outline/apple/src/OutlineVpn.swift#ErrorCode
-//  - cordova/apple/OutlineAppleLib/Sources/OutlineTunnelSources/PacketTunnelProvider.h#NS_ENUM
-//  - cordova-plugin-outline/android/java/org/outline/OutlinePlugin.java#ErrorCode
+//  - capacitor/ios/OutlineLib/VpnExtension/Sources/PacketTunnelProvider.h#NS_ENUM
+//  - capacitor/android/OutlineAndroidLib/src/main/java/org/outline/vpn/Errors.java
 //
 // TODO: Is it safe to re-use values here, i.e. is native node rebuilt in step with the TypeScript?
 export const enum ErrorCode {

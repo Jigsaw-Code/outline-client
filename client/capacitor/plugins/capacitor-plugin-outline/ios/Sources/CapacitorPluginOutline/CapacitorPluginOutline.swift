@@ -25,46 +25,11 @@ import Sentry
 import Tun2socks
 
 // =============================================================================
-// DUPLICATED CODE — keep in sync with the Cordova plugin.
-//
-// Source of the duplication:
-//     client/src/cordova/plugin/apple/src/OutlinePlugin.swift
-//
-// The Cordova and Capacitor iOS plugins are two copies of the same plugin,
-// differing only in the framework hosting them. Cordova receives calls as
-// `CDVInvokedUrlCommand` and answers with `CDVPluginResult`; Capacitor receives
-// `CAPPluginCall` and answers with `resolve` / `reject`. Everything between
-// those two edges is the same logic, written twice — and this file is the
-// second copy.
-//
-// Reimplemented from OutlinePlugin.swift, in this file:
-//   - `TunnelStatus` below, a second verbatim declaration of Cordova's enum of
-//     the same name — if the raw values drift apart, one platform silently
-//     reports the wrong VPN state.
-//   - The exposed method surface, which mirrors the methods OutlinePlugin
-//     exposes to Cordova. Adding a method to one plugin means adding it to the
-//     other.
-//   - Plugin setup: log level, `OutlineSentryLogger`, the VPN status observer
-//     registration, and the Go backend data directory (`pluginInitialize`
-//     there, `load()` here).
-//   - VPN lifecycle over `OutlineVpn.shared` — start / stop / isActive — plus
-//     the macOS/Catalyst `kVpnConnected` / `kVpnDisconnected` notifications.
-//   - The Go backend `invokeMethod` bridge and its error marshalling.
-//   - Sentry setup, including the `beforeSend` block that scrubs the device
-//     identifier, timezone and memory stats. Copied field for field.
-//   - `NEVPNStatus` -> `TunnelStatus` mapping.
-//   - `migrateLocalStorage()`, a ~130 line near-verbatim copy.
-//
-// Consequences to be aware of when editing:
-//   - A bug fixed in one plugin is NOT fixed in the other. This has already
-//     happened: the local storage migration was fixed on one side while the
-//     other kept the original behaviour.
-//   - The two files have drifted before in ways that compile cleanly and only
-//     differ at runtime, so the compiler will not catch a missed update.
-//   - `migrateLocalStorage()` in particular encodes assumptions about the
-//     WebView origin, which is NOT the same on both platforms — Cordova serves
-//     `app://localhost` and Capacitor is configured to match it via
-//     `server.iosScheme`. Do not sync that function blindly.
+// This plugin was ported from the Cordova plugin (OutlinePlugin.swift, deleted
+// with the Cordova client). `migrateLocalStorage()` still carries the WebView
+// origin history of that app: it ran from `file://` under UIWebView and from
+// `app://localhost` under WKWebView, which Capacitor is configured to match via
+// `server.iosScheme` so that upgrading users keep their servers.
 // =============================================================================
 
 public enum TunnelStatus: Int {
