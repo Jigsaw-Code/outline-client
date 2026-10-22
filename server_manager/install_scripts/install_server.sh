@@ -450,8 +450,8 @@ function set_hostname() {
 install_shadowbox() {
   local MACHINE_TYPE
   MACHINE_TYPE="$(uname -m)"
-  if [[ "${MACHINE_TYPE}" != "x86_64" ]]; then
-    log_error "Unsupported machine type: ${MACHINE_TYPE}. Please run this script on a x86_64 machine"
+  if [[ "${MACHINE_TYPE}" != "x86_64" && "${MACHINE_TYPE}" != "aarch64" && "${MACHINE_TYPE}" != "arm64" ]]; then
+    log_error "Unsupported machine type: ${MACHINE_TYPE}. Supported architectures: x86_64, aarch64/arm64."
     exit 1
   fi
 
