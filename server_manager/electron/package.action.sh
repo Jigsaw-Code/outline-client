@@ -54,15 +54,16 @@ function finish_yaml_files() {
   declare -r staging_percentage="${1?Staging percentage missing}"
 
   # electron-builder names its auto-update manifests with a platform-specific
-  # suffix that is NOT the same as our PLATFORM value:
-  #   linux   -> latest-linux.yml
-  #   windows -> latest.yml         (no suffix)
+  # suffix that is NOT the same as our PLATFORM value, and on Linux it also
+  # writes a separate manifest for each non-x64 architecture:
+  #   linux   -> latest-linux.yml, latest-linux-arm64.yml
+  #   windows -> latest.yml  (no suffix; the combined installer covers all archs)
   #   macos   -> latest-mac.yml
-  local yaml_suffix
+  local -a yaml_suffixes
   case "${PLATFORM}" in
-    linux) yaml_suffix='-linux';;
-    windows) yaml_suffix='';;
-    macos) yaml_suffix='-mac';;
+    linux) yaml_suffixes=('-linux' '-linux-arm64');;
+    windows) yaml_suffixes=('');;
+    macos) yaml_suffixes=('-mac');;
     *) echo "Unsupported platform ${PLATFORM}" >&2 && exit 1;;
   esac
 
@@ -72,15 +73,19 @@ function finish_yaml_files() {
   if [[ -z "${release_channel}" ]]; then
     release_channel=latest
   fi
-  echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/${release_channel}${yaml_suffix}.yml"
 
-  # If we cut a staged mainline release, beta testers will take the update as well.
-  if [[ "${release_channel}" == "latest" ]]; then
-    echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/beta${yaml_suffix}.yml"
-  fi
+  local yaml_suffix
+  for yaml_suffix in "${yaml_suffixes[@]}"; do
+    echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/${release_channel}${yaml_suffix}.yml"
 
-  # We don't support alpha releases
-  rm -f "${PROJECT_DIR}/dist/alpha${yaml_suffix}.yml"
+    # If we cut a staged mainline release, beta testers will take the update as well.
+    if [[ "${release_channel}" == "latest" ]]; then
+      echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/beta${yaml_suffix}.yml"
+    fi
+
+    # We don't support alpha releases
+    rm -f "${PROJECT_DIR}/dist/alpha${yaml_suffix}.yml"
+  done
 }
 
 function main() {
