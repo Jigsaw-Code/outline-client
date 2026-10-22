@@ -156,14 +156,18 @@ async function appleDebug(verbose) {
 }
 
 async function setAppleVersion(platform, versionName, buildNumber) {
+  const applePlists = [
+    `platforms/${platform}/Outline/*.plist`,
+    `platforms/${platform}/OutlineControls/*.plist`,
+  ];
   await makeReplacements([
     {
-      files: `platforms/${platform}/Outline/*.plist`,
+      files: applePlists,
       from: /<key>CFBundleShortVersionString<\/key>\s*<string>.*<\/string>/g,
       to: `<key>CFBundleShortVersionString</key>\n  <string>${versionName}</string>`,
     },
     {
-      files: `platforms/${platform}/Outline/*.plist`,
+      files: applePlists,
       from: /<key>CFBundleVersion<\/key>\s*<string>.*<\/string>/g,
       to: `<key>CFBundleVersion</key>\n  <string>${buildNumber}</string>`,
     },

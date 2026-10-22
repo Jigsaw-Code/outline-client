@@ -21,6 +21,9 @@ import OutlineSentryLogger
 import OutlineTunnel
 import Sentry
 import Tun2socks
+#if os(iOS) && !targetEnvironment(macCatalyst)
+  import WidgetKit
+#endif
 
 public enum TunnelStatus: Int {
   case connected = 0
@@ -49,6 +52,14 @@ class OutlinePlugin: CDVPlugin {
     private static let kPlatform = "iOS"
   #endif
   private static let kAppGroup = "group.org.getoutline.client"
+
+  private func reloadOutlineControls() {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+      if #available(iOS 18.0, *) {
+        ControlCenter.shared.reloadControls(ofKind: OutlineControlKind.vpnToggle)
+      }
+    #endif
+  }
 
   override func pluginInitialize() {
     #if DEBUG
@@ -131,6 +142,7 @@ class OutlinePlugin: CDVPlugin {
           named: name,
           withTransport: transportConfig
         )
+        reloadOutlineControls()
         #if os(macOS) || targetEnvironment(macCatalyst)
           NotificationCenter.default.post(
             name: .kVpnConnected,
@@ -163,6 +175,7 @@ class OutlinePlugin: CDVPlugin {
     DDLogInfo("\(Action.stop) \(tunnelId)")
     Task {
       await OutlineVpn.shared.stop(tunnelId)
+      reloadOutlineControls()
       sendSuccess(callbackId: command.callbackId)
       #if os(macOS) || targetEnvironment(macCatalyst)
         NotificationCenter.default.post(
@@ -341,6 +354,12 @@ class OutlinePlugin: CDVPlugin {
     DDLogDebug(
       "OutlinePlugin received onStatusChange (\(String(describing: vpnStatus))) for tunnel \(tunnelId)"
     )
+    switch vpnStatus {
+    case .connected, .disconnected, .disconnecting, .reasserting, .connecting:
+      reloadOutlineControls()
+    default:
+      break
+    }
     guard let callbackId = self.statusCallbackId else {
       // No status change callback registered.
       return

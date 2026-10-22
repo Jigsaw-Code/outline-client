@@ -18,6 +18,10 @@
 		302D95F214D2391D003F00A1 /* MainViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 302D95F014D2391D003F00A1 /* MainViewController.xib */; };
 		5260B05F2C4F0A4E00CDF289 /* VpnExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5260B05C2C4F09FB00CDF289 /* VpnExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		52CE53E7295B6A310064D03D /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 52CE53E6295B6A310064D03D /* Sentry */; };
+		A30000012F40000000000001 /* OutlineControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000072F40000000000007 /* OutlineControls.swift */; };
+		A30000132F40000000000013 /* OutlineControlKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000122F40000000000012 /* OutlineControlKind.swift */; };
+		A30000142F40000000000014 /* OutlineControlKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000122F40000000000012 /* OutlineControlKind.swift */; };
+		A30000022F40000000000002 /* OutlineControls.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A30000052F40000000000005 /* OutlineControls.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5F7F90AE0E924FD7B065C415 /* CDVStatusBar.m in Sources */ = {isa = PBXBuildFile; fileRef = 0394302BA6114B2AB648D4FF /* CDVStatusBar.m */; };
 		65A9AC9C2BEC091700C5899F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 65A9AC9B2BEC091700C5899F /* PrivacyInfo.xcprivacy */; };
 		6AFF5BF91D6E424B00AB3073 /* CDVLaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6AFF5BF81D6E424B00AB3073 /* CDVLaunchScreen.storyboard */; };
@@ -80,6 +84,13 @@
 			remoteGlobalIDString = A246B7DC2B07AACF00ECACD5;
 			remoteInfo = AppKitIntegration;
 		};
+		A30000042F40000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A300000D2F4000000000000D;
+			remoteInfo = OutlineControls;
+		};
 		A29688D02D84A5F60070772E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5260B0572C4F09FB00CDF289 /* OutlineLib.xcodeproj */;
@@ -97,6 +108,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				5260B05F2C4F0A4E00CDF289 /* VpnExtension.appex in Embed App Extensions */,
+				A30000022F40000000000002 /* OutlineControls.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -148,6 +160,11 @@
 		65A9AC9B2BEC091700C5899F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6AFF5BF81D6E424B00AB3073 /* CDVLaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = CDVLaunchScreen.storyboard; path = Outline/CDVLaunchScreen.storyboard; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* Outline-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "Outline-Info.plist"; path = "Outline/Outline-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = SOURCE_ROOT; };
+		A30000052F40000000000005 /* OutlineControls.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OutlineControls.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000072F40000000000007 /* OutlineControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineControls.swift; sourceTree = "<group>"; };
+		A30000122F40000000000012 /* OutlineControlKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineControlKind.swift; sourceTree = "<group>"; };
+		A30000082F40000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A30000092F40000000000009 /* OutlineControls.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OutlineControls.entitlements; sourceTree = "<group>"; };
 		91E45572BB494E9299D2DD41 /* CDVClipboard.m */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.objc; name = CDVClipboard.m; path = "cordova-plugin-clipboard/CDVClipboard.m"; sourceTree = "<group>"; };
 		936C2951B7544BC8A20B6746 /* CDVClipboard.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = CDVClipboard.h; path = "cordova-plugin-clipboard/CDVClipboard.h"; sourceTree = "<group>"; };
 		941052A220F54953928FF2E2 /* libz.tbd */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
@@ -249,6 +266,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A300000A2F4000000000000A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -273,6 +297,7 @@
 			children = (
 				1D6058910D05DD3D006BFB54 /* Outline.app */,
 				A246B7DD2B07AACF00ECACD5 /* AppKitIntegration.framework */,
+				A30000052F40000000000005 /* OutlineControls.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -288,6 +313,7 @@
 				EB87FDF31871DA8E0020F90C /* www */,
 				EB87FDF11871DA420020F90C /* Staging */,
 				301BF52D109A57CC0062928A /* CordovaLib/CordovaLib.xcodeproj */,
+				A30000062F40000000000006 /* OutlineControls */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				307C750510C5A3420062BCA9 /* Plugins */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
@@ -400,6 +426,17 @@
 			path = AppKitBridge;
 			sourceTree = "<group>";
 		};
+		A30000062F40000000000006 /* OutlineControls */ = {
+			isa = PBXGroup;
+			children = (
+				A30000072F40000000000007 /* OutlineControls.swift */,
+				A30000122F40000000000012 /* OutlineControlKind.swift */,
+				A30000082F40000000000008 /* Info.plist */,
+				A30000092F40000000000009 /* OutlineControls.entitlements */,
+			);
+			path = OutlineControls;
+			sourceTree = "<group>";
+		};
 		EB87FDF11871DA420020F90C /* Staging */ = {
 			isa = PBXGroup;
 			children = (
@@ -448,6 +485,7 @@
 			dependencies = (
 				5260B05E2C4F0A3300CDF289 /* PBXTargetDependency */,
 				301BF551109A68C00062928A /* PBXTargetDependency */,
+				A300000E2F4000000000000E /* PBXTargetDependency */,
 				A246B7E72B07AADD00ECACD5 /* PBXTargetDependency */,
 			);
 			name = Outline;
@@ -480,6 +518,25 @@
 			productReference = A246B7DD2B07AACF00ECACD5 /* AppKitIntegration.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		A300000D2F4000000000000D /* OutlineControls */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A30000112F40000000000011 /* Build configuration list for PBXNativeTarget "OutlineControls" */;
+			buildPhases = (
+				A300000C2F4000000000000C /* Sources */,
+				A300000A2F4000000000000A /* Frameworks */,
+				A300000B2F4000000000000B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OutlineControls;
+			packageProductDependencies = (
+			);
+			productName = OutlineControls;
+			productReference = A30000052F40000000000005 /* OutlineControls.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -499,6 +556,14 @@
 					};
 					A246B7DC2B07AACF00ECACD5 = {
 						CreatedOnToolsVersion = 15.0.1;
+					};
+					A300000D2F4000000000000D = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -596,6 +661,7 @@
 			targets = (
 				1D6058900D05DD3D006BFB54 /* Outline */,
 				A246B7DC2B07AACF00ECACD5 /* AppKitIntegration */,
+				A300000D2F4000000000000D /* OutlineControls */,
 			);
 		};
 /* End PBXProject section */
@@ -653,6 +719,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A300000B2F4000000000000B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -682,6 +755,7 @@
 				302D95F114D2391D003F00A1 /* MainViewController.m in Sources */,
 				5F7F90AE0E924FD7B065C415 /* CDVStatusBar.m in Sources */,
 				2A617D29B96942E58B082FAC /* OutlinePlugin.swift in Sources */,
+				A30000142F40000000000014 /* OutlineControlKind.swift in Sources */,
 				1273B4E700B84E31B2528701 /* CDVClipboard.m in Sources */,
 				A271D42D2A708240009981B2 /* AppDelegate+Outline.m in Sources */,
 			);
@@ -693,6 +767,15 @@
 			files = (
 				A272490F2B0D24200018A598 /* StatusItemController.swift in Sources */,
 				A2AC1A4F2B082197004E13CB /* AppKitController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A300000C2F4000000000000C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A30000012F40000000000001 /* OutlineControls.swift in Sources */,
+				A30000132F40000000000013 /* OutlineControlKind.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -708,6 +791,12 @@
 			isa = PBXTargetDependency;
 			name = VpnExtension;
 			targetProxy = 5260B05D2C4F0A3300CDF289 /* PBXContainerItemProxy */;
+		};
+		A300000E2F4000000000000E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = A300000D2F4000000000000D /* OutlineControls */;
+			targetProxy = A30000042F40000000000004 /* PBXContainerItemProxy */;
 		};
 		A246B7E72B07AADD00ECACD5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1010,6 +1099,83 @@
 			};
 			name = Release;
 		};
+		A300000F2F4000000000000F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3047A50F1AB8059700498E2A /* build-debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = OutlineControls/OutlineControls.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WP4DKSWWZM;
+				GENERATE_INFOPLIST_FILE = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = OutlineControls/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.outline.ios.client.OutlineControls;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A30000102F40000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3047A5101AB8059700498E2A /* build-release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = OutlineControls/OutlineControls.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WP4DKSWWZM;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OutlineControls/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.outline.ios.client.OutlineControls;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3047A5111AB8059700498E2A /* build.xcconfig */;
@@ -1118,6 +1284,15 @@
 			buildConfigurations = (
 				A246B7E22B07AACF00ECACD5 /* Debug */,
 				A246B7E32B07AACF00ECACD5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A30000112F40000000000011 /* Build configuration list for PBXNativeTarget "OutlineControls" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A300000F2F4000000000000F /* Debug */,
+				A30000102F40000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

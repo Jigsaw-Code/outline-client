@@ -50,7 +50,11 @@ public class OutlineVpn: NSObject {
   // MARK: - Interface
 
   /** Starts a VPN tunnel as specified in the OutlineTunnel object. */
-  public func start(_ tunnelId: String, named name: String?, withTransport transportConfig: String) async throws {
+  public func start(
+    _ tunnelId: String,
+    named name: String?,
+    withTransport transportConfig: String
+  ) async throws {
     if let manager = await getTunnelManager(), isActiveSession(manager.connection) {
       DDLogDebug("Stoppping active session before starting new one")
       await stopSession(manager)
@@ -58,7 +62,11 @@ public class OutlineVpn: NSObject {
 
     let manager: NETunnelProviderManager
     do {
-      manager = try await setupVpn(withId: tunnelId, named: name ?? "Outline Server", withTransport: transportConfig)
+      manager = try await setupVpn(
+        withId: tunnelId,
+        named: name ?? "Outline Server",
+        withTransport: transportConfig
+      )
     } catch {
       DDLogError("Failed to setup VPN: \(error.localizedDescription)")
       throw OutlineError.vpnPermissionNotGranted(cause: error)
@@ -171,7 +179,11 @@ public class OutlineVpn: NSObject {
 
   // Adds a VPN configuration to the user preferences if no Outline profile is present. Otherwise
   // enables the existing configuration.
-  private func setupVpn(withId id:String, named name:String, withTransport transportConfig: String) async throws -> NETunnelProviderManager {
+  private func setupVpn(
+    withId id:String,
+    named name:String,
+    withTransport transportConfig: String
+  ) async throws -> NETunnelProviderManager {
     let managers = try await NETunnelProviderManager.loadAllFromPreferences()
     var manager: NETunnelProviderManager!
     if managers.count > 0 {
@@ -223,7 +235,7 @@ public class OutlineVpn: NSObject {
       return
     }
     DDLogDebug("OutlineVpn received status change for \(tunnelId): \(String(describing: session.status))")
-    if isActiveSession(session) {
+    if shouldEnableConnectVpnOnDemand(session) {
       Task {
         await setConnectVpnOnDemand(manager, true)
       }
@@ -253,6 +265,12 @@ private func getTunnelId(forManager manager:NETunnelProviderManager?) -> String?
 }
 
 private func isActiveSession(_ session: NEVPNConnection?) -> Bool {
+  let vpnStatus = session?.status
+  return vpnStatus == .connected || vpnStatus == .connecting ||
+    vpnStatus == .disconnecting || vpnStatus == .reasserting
+}
+
+private func shouldEnableConnectVpnOnDemand(_ session: NEVPNConnection?) -> Bool {
   let vpnStatus = session?.status
   return vpnStatus == .connected || vpnStatus == .connecting || vpnStatus == .reasserting
 }
