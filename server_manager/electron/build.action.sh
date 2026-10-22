@@ -73,9 +73,3 @@ cd "${STATIC_DIR}"
 # Icons.
 cd "${ROOT_DIR}"
 cp -r server_manager/electron/icons/ "${BUILD_DIR}/server_manager/electron/static/icons/"
-
-# NSIS custom installer include (Windows). electron-builder resolves
-# nsis.include relative to the app's buildResources dir ("build") under the
-# packaged project dir, so stage it there.
-mkdir -p "${STATIC_DIR}/build"
-cp server_manager/electron/windows/uninstall_legacy_ia32.nsh "${STATIC_DIR}/build/"

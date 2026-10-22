@@ -25,9 +25,6 @@
       }
     ]
   },
-  "nsis": {
-    "include": "uninstall_legacy_ia32.nsh"
-  },
   "mac": {
     "hardenedRuntime": true,
     "entitlements": "server_manager/electron/release/macos.entitlements",
