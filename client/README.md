@@ -52,7 +52,7 @@ npm run action storybook
 Certain actions take configuration flags - but since we're running them through `npm`, you'll have to use the `--` seperator to funnel them through to the underlying process. For example, to build the iOS app in release mode, you'd run:
 
 ```sh
-SENTRY_DSN=<your sentry dsn> npm run action client/capacitor/build ios -- --buildMode=release --versionName=<your version name>
+SENTRY_DSN=<your sentry dsn> DEVELOPMENT_TEAM=<your apple team id> npm run action client/capacitor/build ios -- --buildMode=release --versionName=<your version name>
 ```
 
 ## Life of a Packet

@@ -52,7 +52,7 @@ npm run storybook
 Certain actions take configuration flags. Since they are run through `npm`, you must use the `--` separator to pass them to the underlying process. For example:
 
 ```sh
-SENTRY_DSN=<your sentry dsn> npm run action client/capacitor/build ios -- --buildMode=release --versionName=<your version name>
+SENTRY_DSN=<your sentry dsn> DEVELOPMENT_TEAM=<your apple team id> npm run action client/capacitor/build ios -- --buildMode=release --versionName=<your version name>
 ```
 
 ## Testing the Client

@@ -15,7 +15,7 @@ The Outline monorepo is organized into three main components:
 The primary entry point for all development tasks is `npm run action <path>`, which resolves to `.action.sh` or `.action.mjs` files in the repo. Run `npm run action list` to see all available actions. Pass flags after `--`:
 
 ```sh
-npm run action client/capacitor/build ios -- --buildMode=release
+DEVELOPMENT_TEAM=<your apple team id> npm run action client/capacitor/build ios -- --buildMode=release
 ```
 
 ### Common Actions
