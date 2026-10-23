@@ -147,6 +147,10 @@ export class OutlinePerKeyDataLimitDialog extends LitElement {
    * input.
    */
   @state() _enableSave = false;
+  /**
+   * @member _saving Whether a save request is in flight.
+   */
+  @state() _saving = false;
 
   /**
    * @member language The ISO 3166-1 alpha-2 language code used for i18n.
@@ -204,7 +208,7 @@ export class OutlinePerKeyDataLimitDialog extends LitElement {
         <div id="buttonsSection">
           <paper-button
             id="save"
-            ?disabled=${!this._enableSave}
+            ?disabled=${!this._enableSave || this._saving}
             @tap=${this._onSaveButtonTapped}
             >${this.localize('save')}</paper-button
           >
@@ -231,6 +235,7 @@ export class OutlinePerKeyDataLimitDialog extends LitElement {
           value=${this._initialValue()}
           size="7"
           @keyup=${this._setSaveButtonDisabledState}
+          @keydown=${this._onDataLimitInputKeydown}
         >
         </paper-input>
         <paper-dropdown-menu id="unitsDropdown" noink>
@@ -297,19 +302,35 @@ export class OutlinePerKeyDataLimitDialog extends LitElement {
     this._enableSave = !(this._input?.invalid ?? false);
   }
 
+  private _onDataLimitInputKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    void this._onSaveButtonTapped();
+  }
+
   private async _onSaveButtonTapped() {
+    if (!this._enableSave || this._saving) {
+      return;
+    }
     const change = this._dataLimitChange();
     if (change === Change.UNCHANGED) {
       return;
     }
-    const result =
-      change === Change.SET
-        ? await this._onDataLimitSet(
-            displayDataAmountToBytes(this.inputDataLimit())
-          )
-        : await this._onDataLimitRemoved();
-    if (result) {
-      this.close();
+    this._saving = true;
+    try {
+      const result =
+        change === Change.SET
+          ? await this._onDataLimitSet(
+              displayDataAmountToBytes(this.inputDataLimit())
+            )
+          : await this._onDataLimitRemoved();
+      if (result) {
+        this.close();
+      }
+    } finally {
+      this._saving = false;
     }
   }
 
