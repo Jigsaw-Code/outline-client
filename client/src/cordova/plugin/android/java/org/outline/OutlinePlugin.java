@@ -40,8 +40,10 @@ import org.json.JSONObject;
 import org.outline.log.OutlineLogger;
 import org.outline.log.SentryErrorReporter;
 import org.outline.vpn.Errors;
+import org.outline.vpn.QuickSettingsTileService;
 import org.outline.vpn.VpnServiceStarter;
 import org.outline.vpn.VpnTunnelService;
+import org.outline.vpn.VpnTunnelStore;
 
 import outline.GoBackendConfig;
 import outline.Outline;
@@ -100,6 +102,8 @@ public class OutlinePlugin extends CordovaPlugin {
   }
 
   private static final int REQUEST_CODE_PREPARE_VPN = 100;
+  // Must match outline.MethodEraseServiceStorage in the Go method channel.
+  private static final String METHOD_ERASE_SERVICE_STORAGE = "EraseServiceStorage";
 
   // AIDL interface for VpnTunnelService, which is bound for the lifetime of this class.
   // The VpnTunnelService runs in a sub process and is thread-safe.
@@ -200,6 +204,12 @@ public class OutlinePlugin extends CordovaPlugin {
         if (Action.INVOKE_METHOD.is(action)) {
           final String methodName = args.getString(0);
           final String input = args.getString(1);
+          // Forgetting a server erases Go per-service files but previously left the
+          // Java VpnTunnelStore intact, so the Quick Settings tile could reconnect
+          // to a removed server. Clear the store when the forgotten id matches.
+          if (METHOD_ERASE_SERVICE_STORAGE.equals(methodName)) {
+            clearTunnelStoreIfMatches(input);
+          }
           LOG.fine(String.format(Locale.ROOT, "Calling InvokeMethod(%s, %s)", methodName, input));
           final InvokeMethodResult result = Outline.invokeMethod(methodName, input);
           if (result.getError() != null) {
@@ -344,6 +354,27 @@ public class OutlinePlugin extends CordovaPlugin {
   };
 
   // Helpers
+
+  /**
+   * Clears {@link VpnTunnelStore} when {@code serviceId} matches the persisted tunnel id.
+   * Do not clear on disconnect — that would break boot / always-on auto-start.
+   */
+  private void clearTunnelStoreIfMatches(final String serviceId) {
+    if (serviceId == null || serviceId.isEmpty()) {
+      return;
+    }
+    try {
+      final VpnTunnelStore store = new VpnTunnelStore(getBaseContext());
+      final JSONObject stored = store.load();
+      if (stored != null && serviceId.equals(stored.optString("id"))) {
+        store.clear();
+        QuickSettingsTileService.requestTileUpdate(getBaseContext());
+      }
+    } catch (Exception e) {
+      // Erase must still reach Go even if the Java store clear fails.
+      LOG.log(Level.WARNING, "Failed to clear VPN tunnel store after erase", e);
+    }
+  }
 
   private Context getBaseContext() {
     return this.cordova.getActivity().getApplicationContext();

@@ -21,7 +21,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 // Persistence layer for a single tunnel configuration. Uses |SharedPreferences| as the store.
-class VpnTunnelStore {
+// Public so Cordova/Capacitor plugins can clear the store when a server is forgotten.
+public class VpnTunnelStore {
   private static final Logger LOG = Logger.getLogger(VpnTunnelStore.class.getName());
   // TODO(alalama): s/connection/tunnel when update the schema.
   private static final String TUNNEL_KEY = "connection";

@@ -42,8 +42,10 @@ import org.json.JSONException
 import org.outline.log.OutlineLogger
 import org.outline.log.SentryErrorReporter
 import org.outline.vpn.Errors
+import org.outline.vpn.QuickSettingsTileService
 import org.outline.vpn.VpnServiceStarter
 import org.outline.vpn.VpnTunnelService
+import org.outline.vpn.VpnTunnelStore
 import outline.Outline
 import platerrors.Platerrors
 import platerrors.PlatformError
@@ -164,6 +166,12 @@ class CapacitorPluginOutline : Plugin() {
           return@execute
         }
         val input = call.getString("input", "") ?: ""
+        // Forgetting a server erases Go per-service files but previously left the
+        // Java VpnTunnelStore intact, so the Quick Settings tile could reconnect
+        // to a removed server. Clear the store when the forgotten id matches.
+        if (methodName == METHOD_ERASE_SERVICE_STORAGE) {
+          clearTunnelStoreIfMatches(input)
+        }
         val result = Outline.invokeMethod(methodName, input)
         result.error?.let { error ->
           sendErrorResult(call, error)
@@ -530,12 +538,32 @@ class CapacitorPluginOutline : Plugin() {
     }
   }
 
+  /**
+   * Clears [VpnTunnelStore] when [serviceId] matches the persisted tunnel id.
+   * Do not clear on disconnect — that would break boot / always-on auto-start.
+   */
+  private fun clearTunnelStoreIfMatches(serviceId: String) {
+    if (serviceId.isEmpty()) return
+    try {
+      val store = VpnTunnelStore(baseContext())
+      val stored = store.load() ?: return
+      if (serviceId == stored.optString("id")) {
+        store.clear()
+        QuickSettingsTileService.requestTileUpdate(baseContext())
+      }
+    } catch (e: Exception) {
+      // Erase must still reach Go even if the Java store clear fails.
+    }
+  }
+
   private fun baseContext(): Context = context.applicationContext
 
   companion object {
     // Must match the name of the @ActivityCallback method.
     private const val VPN_PERMISSION_CALLBACK = "onVpnPermissionResult"
     private const val STATUS_CHANGE_EVENT = "onStatusChange"
+    // Must match outline.MethodEraseServiceStorage in the Go method channel.
+    private const val METHOD_ERASE_SERVICE_STORAGE = "EraseServiceStorage"
 
     // Any file:// document shares the single file:// storage origin, so this
     // reads the same namespace the Cordova build wrote to under www/.
