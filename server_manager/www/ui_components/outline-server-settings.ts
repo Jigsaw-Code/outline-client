@@ -127,6 +127,14 @@ Polymer({
         margin-bottom: 1rem;
         margin-top: -1rem;
       }
+      /* Keep LTR management URLs (and trailing slash) isolated under RTL UI */
+      .management-api-url-input {
+        --paper-input-container-input: {
+          direction: ltr;
+          unicode-bidi: isolate;
+          text-align: start;
+        };
+      }
       paper-input:not([readonly]) {
         width: 60%;
       }
@@ -257,7 +265,9 @@ Polymer({
               localize="[[localize]]"
             ></outline-validated-input>
             <paper-input
+              class="management-api-url-input"
               readonly=""
+              dir="ltr"
               value="[[serverManagementApiUrl]]"
               label="[[localize('settings-server-api-url')]]"
               hidden$="[[!serverManagementApiUrl]]"
