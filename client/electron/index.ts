@@ -553,8 +553,9 @@ function main() {
           //       this).
           if (currentTunnel) {
             console.log('disconnecting from current server...');
+            const onceDisconnected = currentTunnel.onceDisconnected;
             void currentTunnel.disconnect();
-            await currentTunnel.onceDisconnected;
+            await onceDisconnected;
           }
 
           console.log(`connecting to ${request.name} (${request.id})...`);
