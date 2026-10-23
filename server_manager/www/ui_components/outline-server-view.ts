@@ -651,11 +651,14 @@ export class ServerView extends DirMixin(PolymerElement) {
   ready() {
     super.ready();
 
+    this._restoreAccessKeySortPreference();
+
     this.addEventListener(
       AccessKeyDataTableEvent.SORT,
       (event: CustomEvent) => {
         this.accessKeyDataSortDirection = event.detail.sortDirection;
         this.accessKeyDataSortColumnId = event.detail.columnId;
+        this._persistAccessKeySortPreference();
       }
     );
 
@@ -711,6 +714,45 @@ export class ServerView extends DirMixin(PolymerElement) {
   accessKeyData: AccessKeyDataTableRow[] = [];
   accessKeyDataSortDirection: DataTableSortDirection;
   accessKeyDataSortColumnId: string;
+
+  private _accessKeySortStorageKey(): string {
+    return `outline-manager-access-key-sort:${this.serverId || 'default'}`;
+  }
+
+  private _persistAccessKeySortPreference(): void {
+    try {
+      window.localStorage.setItem(
+        this._accessKeySortStorageKey(),
+        JSON.stringify({
+          columnId: this.accessKeyDataSortColumnId,
+          sortDirection: this.accessKeyDataSortDirection,
+        })
+      );
+    } catch (e) {
+      // Ignore quota / private-mode failures.
+    }
+  }
+
+  private _restoreAccessKeySortPreference(): void {
+    try {
+      const raw = window.localStorage.getItem(this._accessKeySortStorageKey());
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw) as {
+        columnId?: string;
+        sortDirection?: DataTableSortDirection;
+      };
+      if (parsed.columnId) {
+        this.accessKeyDataSortColumnId = parsed.columnId;
+      }
+      if (parsed.sortDirection) {
+        this.accessKeyDataSortDirection = parsed.sortDirection;
+      }
+    } catch (e) {
+      // Ignore corrupt preference.
+    }
+  }
   cloudId = '';
   cloudLocation: CloudLocation = null;
   defaultDataLimitBytes: number = null;
