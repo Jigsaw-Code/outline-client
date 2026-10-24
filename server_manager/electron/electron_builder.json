@@ -7,9 +7,12 @@
     "target": [
       {
         "target": "AppImage",
-        "arch": ["x64"]
+        "arch": ["x64", "arm64"]
       }
     ]
+  },
+  "appImage": {
+    "artifactName": "Outline-Manager-${arch}.${ext}"
   },
   "win": {
     "icon": "icons/win/icon.ico",
@@ -18,7 +21,7 @@
     "target": [
       {
         "target": "nsis",
-        "arch": "ia32"
+        "arch": ["ia32", "arm64"]
       }
     ]
   },

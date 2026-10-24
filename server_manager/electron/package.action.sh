@@ -32,7 +32,7 @@ function package_electron() {
     linux)
       electron_builder_cmd+=(--linux);;
     windows)
-      electron_builder_cmd+=(--win --ia32);;
+      electron_builder_cmd+=(--win --ia32 --arm64);;
     macos)
       electron_builder_cmd+=(--mac);;
     *)
@@ -53,21 +53,39 @@ function package_electron() {
 function finish_yaml_files() {
   declare -r staging_percentage="${1?Staging percentage missing}"
 
+  # electron-builder names its auto-update manifests with a platform-specific
+  # suffix that is NOT the same as our PLATFORM value, and on Linux it also
+  # writes a separate manifest for each non-x64 architecture:
+  #   linux   -> latest-linux.yml, latest-linux-arm64.yml
+  #   windows -> latest.yml  (no suffix; the combined installer covers all archs)
+  #   macos   -> latest-mac.yml
+  local -a yaml_suffixes
+  case "${PLATFORM}" in
+    linux) yaml_suffixes=('-linux' '-linux-arm64');;
+    windows) yaml_suffixes=('');;
+    macos) yaml_suffixes=('-mac');;
+    *) echo "Unsupported platform ${PLATFORM}" >&2 && exit 1;;
+  esac
+
   local release_channel
   release_channel=$(node_modules/node-jq/bin/jq -r '.version' server_manager/package.json | cut -s -d'-' -f2)
   # If this isn't an alpha or beta build, `cut -s` will return an empty string
   if [[ -z "${release_channel}" ]]; then
     release_channel=latest
   fi
-  echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/${release_channel}${PLATFORM}.yml"
 
-  # If we cut a staged mainline release, beta testers will take the update as well.
-  if [[ "${release_channel}" == "latest" ]]; then
-    echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/beta${PLATFORM}.yml"
-  fi
+  local yaml_suffix
+  for yaml_suffix in "${yaml_suffixes[@]}"; do
+    echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/${release_channel}${yaml_suffix}.yml"
 
-  # We don't support alpha releases
-  rm -f "${PROJECT_DIR}/dist/alpha${PLATFORM}.yml"
+    # If we cut a staged mainline release, beta testers will take the update as well.
+    if [[ "${release_channel}" == "latest" ]]; then
+      echo "stagingPercentage: ${staging_percentage}" >> "${PROJECT_DIR}/dist/beta${yaml_suffix}.yml"
+    fi
+
+    # We don't support alpha releases
+    rm -f "${PROJECT_DIR}/dist/alpha${yaml_suffix}.yml"
+  done
 }
 
 function main() {
