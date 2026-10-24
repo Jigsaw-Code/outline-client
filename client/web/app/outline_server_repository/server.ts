@@ -124,7 +124,7 @@ class OutlineServer implements Server {
         throw cause;
       }
 
-      // e originates in "native" code: either Cordova or Electron's main process.
+      // e originates in "native" code: either the Capacitor plugin or Electron's main process.
       // Because of this, we cannot assume "instanceof OutlinePluginError" will work.
       if (cause.errorCode) {
         throw errors.fromErrorCode(cause.errorCode);

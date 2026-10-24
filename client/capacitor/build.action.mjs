@@ -20,8 +20,8 @@ import url from 'url';
 import {getRootDir} from '@outline/infrastructure/build/get_root_dir.mjs';
 import {spawnStream} from '@outline/infrastructure/build/spawn_stream.mjs';
 
+import {buildUniversalApkSet} from './android_universal_apk.mjs';
 import {buildWebBundle} from './web_bundle.mjs';
-import {buildUniversalApkSet} from '../build/android_universal_apk.mjs';
 import {getBuildParameters} from '../build/get_build_parameters.mjs';
 
 const capacitorDir = path.dirname(url.fileURLToPath(import.meta.url));
@@ -197,10 +197,8 @@ const IOS_XCODE_BUILD_ARGS = [
 
 async function iosDebug(verbose) {
   // `cap build` only produces signed release builds, so invoke xcodebuild
-  // directly for an unsigned debug build, the same way the Cordova iOS build
-  // does (see client/src/cordova/build.action.mjs). Signing is disabled so the
-  // build needs no development team or provisioning profile, which CI does not
-  // have.
+  // directly for an unsigned debug build. Signing is disabled so the build
+  // needs no development team or provisioning profile, which CI does not have.
   console.warn(
     'WARNING: building "ios" in [DEBUG] mode. Do not publish this build!!'
   );

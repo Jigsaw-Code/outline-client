@@ -19,30 +19,43 @@ import url from 'url';
 import {getRootDir} from '@outline/infrastructure/build/get_root_dir.mjs';
 import rmfr from 'rmfr';
 
-import {getBrowserWebpackConfig} from './get_browser_webpack_config.mjs';
+import webpackConfig from './webpack_electron.mjs';
 import {getBuildParameters} from '../build/get_build_parameters.mjs';
+import {getWebpackBuildMode} from '../build/get_webpack_build_mode.mjs';
 import {runWebpack} from '../build/run_webpack.mjs';
 
+const ELECTRON_PLATFORMS = ['linux', 'windows'];
+
 /**
- * @description Builds the web UI for use across both electron and cordova.
+ * @description Builds the web UI (client/www/) for the Electron client. The
+ * mobile clients bundle the same UI through client/capacitor/web_build.
  *
  * @param {string[]} parameters
  */
 export async function main(...parameters) {
-  const {sentryDsn, platform, buildMode, versionName, buildNumber} = getBuildParameters(parameters);
+  const {sentryDsn, platform, buildMode, versionName, buildNumber} =
+    getBuildParameters(parameters);
 
-  await rmfr(path.resolve(getRootDir(), 'www'));
+  if (!ELECTRON_PLATFORMS.includes(platform)) {
+    throw new TypeError(
+      `client/web/build supports the Electron platforms ${ELECTRON_PLATFORMS.join(', ')}, got "${platform}". ` +
+        'Use client/capacitor/web_build for the mobile and browser bundles.'
+    );
+  }
 
-  // write build environment
-  await fs.mkdir(path.resolve(getRootDir(), 'www'), {recursive: true});
+  await rmfr(path.resolve(getRootDir(), 'client', 'www'));
 
   if (buildMode === 'release') {
     if (versionName === '0.0.0') {
-      throw new TypeError('Release builds require a valid versionName, but it is set to 0.0.0.');
+      throw new TypeError(
+        'Release builds require a valid versionName, but it is set to 0.0.0.'
+      );
     }
 
     if (!sentryDsn) {
-      throw new TypeError('Release builds require SENTRY_DSN, but it is not defined.');
+      throw new TypeError(
+        'Release builds require SENTRY_DSN, but it is not defined.'
+      );
     }
 
     /*
@@ -51,12 +64,15 @@ export async function main(...parameters) {
     */
     try {
       new URL(sentryDsn);
-    } catch (e) {
+    } catch {
       throw new TypeError(`The sentryDsn ${sentryDsn} is not a valid URL!`);
     }
   }
 
-  await fs.mkdir(path.resolve(getRootDir(), 'client', 'www'), {recursive: true});
+  // write build environment
+  await fs.mkdir(path.resolve(getRootDir(), 'client', 'www'), {
+    recursive: true,
+  });
 
   await fs.writeFile(
     path.resolve(getRootDir(), 'client', 'www', 'environment.json'),
@@ -67,7 +83,11 @@ export async function main(...parameters) {
     })
   );
 
-  await runWebpack(getBrowserWebpackConfig(platform, buildMode));
+  webpackConfig.mode = getWebpackBuildMode(buildMode);
+  // emit source maps only for debug builds.
+  webpackConfig.devtool = buildMode === 'debug' ? 'inline-source-map' : false;
+
+  await runWebpack(webpackConfig);
 }
 
 if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// <reference types='../types/clipboard.d.ts'/>
-
 export type ClipboardListener = (text: string) => void;
 
 export interface Clipboard {

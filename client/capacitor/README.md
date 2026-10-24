@@ -1,8 +1,16 @@
 # Capacitor client
 
-This directory is the Capacitor-based client shell. These instructions cover the **browser** dev workflow (webpack bundle under `client/capacitor/www/`) and the native **iOS** and **Android** builds.
+This directory is the Capacitor-based client for iOS and Android. These instructions cover the **browser** dev workflow (webpack bundle under `client/capacitor/www/`) and the native **iOS** and **Android** builds. Platform-specific development and debugging notes live in [ios/](ios) and [android/](android).
 
 Run all `npm run action` commands from the **repository root**.
+
+## Layout
+
+- `src/`: the web shell that boots the shared UI in `client/web/` on top of the native plugin.
+- `plugins/capacitor-plugin-outline/`: the Capacitor plugin (TypeScript definitions, Swift and Kotlin implementations) that exposes the VPN, the Go backend and error reporting to the web app.
+- `ios/App/`: the Xcode project of the iOS app. `ios/OutlineLib/` holds the `VpnExtension` network extension (and its unit tests) that the app embeds, and `ios/OutlineAppleLib/` the Swift package shared by the plugin and the extension.
+- `android/`: the Gradle project of the Android app. `android/OutlineAndroidLib/` is the `:outline-lib` module with the VPN service, the tunnel store and the Quick Settings tile.
+- `assets/`: source images for the app icons and splash screens (see below).
 
 ## Requirements (browser)
 
@@ -85,6 +93,14 @@ go tool task addlicense
 ```
 
 The web/browser build does not use this directory — its favicon and images come from `client/web/` (see `webpack.config.js`). If a PWA target is ever added, `@capacitor/assets` can generate its icons too (`--pwa`).
+
+## Native tests
+
+The `VpnExtension` unit tests (`ios/OutlineLib`, scheme `VpnExtensionTest`) run on the iOS Simulator with:
+
+```sh
+npm run action client/capacitor/test ios
+```
 
 ## iOS (device or simulator)
 
@@ -176,7 +192,7 @@ Use this flow when you need the real Outline Android plugin (VPN, native method 
 ### Requirements (Android)
 
 - [Android Studio](https://developer.android.com/studio) with a recent Android SDK (match the versions in `client/capacitor/android/variables.gradle` and root Gradle files).
-- **JDK 21** — the Android Gradle build compiles against Java 21 (see `client/capacitor/android/app/build.gradle`). This differs from the Cordova Android client, which builds with JDK 17.
+- **JDK 21** — the Android Gradle build compiles against Java 21 (see `client/capacitor/android/app/build.gradle`).
 - A **physical device** with USB debugging or an **AVD** emulator.
 - **Go** on your `PATH` (`npm run capacitor:sync:before` runs `go tool task` for tun2socks and Android configure; see `package.json` in this directory).
 

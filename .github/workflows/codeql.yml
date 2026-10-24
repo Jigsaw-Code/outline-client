@@ -68,7 +68,7 @@ jobs:
         - language: javascript-typescript
           build-mode: none
         # TODO: swift is disabled due to the following error:
-        #   > /Users/runner/work/outline-apps/outline-apps/client/src/cordova/apple/OutlineAppleLib/Sources/OutlineError/OutlineError.swift:15:8:
+        #   > /Users/runner/work/outline-apps/outline-apps/client/capacitor/ios/OutlineAppleLib/Sources/OutlineError/OutlineError.swift:15:8:
         #   > error: no such module 'Tun2socks'
         # CodeQL supports the following values keywords for 'language': 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both

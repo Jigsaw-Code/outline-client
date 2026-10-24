@@ -23,10 +23,12 @@
     "*.js",
     "*.mjs"
   ],
+  "files": [
+    "upload_debug_symbols.action.mjs"
+  ],
   "include": [
     "electron",
     "go",
-    "src",
     "web"
   ]
 }

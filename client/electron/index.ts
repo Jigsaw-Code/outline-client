@@ -549,7 +549,7 @@ function main() {
           // TODO: refactor channel name and namespace to a constant
           const request = JSON.parse(params) as StartRequestJson;
           // TODO: Rather than first disconnecting, implement a more efficient switchover (as well as
-          //       being faster, this would help prevent traffic leaks - the Cordova clients already do
+          //       being faster, this would help prevent traffic leaks - the mobile clients already do
           //       this).
           if (currentTunnel) {
             console.log('disconnecting from current server...');

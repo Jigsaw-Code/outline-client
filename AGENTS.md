@@ -15,13 +15,13 @@ The Outline monorepo is organized into three main components:
 The primary entry point for all development tasks is `npm run action <path>`, which resolves to `.action.sh` or `.action.mjs` files in the repo. Run `npm run action list` to see all available actions. Pass flags after `--`:
 
 ```sh
-npm run action client/src/cordova/setup macos -- --buildMode=release
+DEVELOPMENT_TEAM=<your apple team id> npm run action client/capacitor/build ios -- --buildMode=release
 ```
 
 ### Common Actions
 
 *   `npm run action list`: Lists all available actions.
-*   `npm run action client/web/start`: Starts a dev server for the shared web UI.
+*   `npm run action client/capacitor/start`: Starts a dev server for the shared web UI (browser build of the Capacitor shell).
 *   `npm run action server_manager/www/start`: Starts a dev server for the Manager UI.
 *   `npm run action <component>/test`: Runs tests (e.g. `npm run action client/web/test`).
 *   `npm run action <component>/build`: Builds a component (e.g. `npm run action client/electron/build linux -- --arch=x64`).
@@ -53,6 +53,6 @@ Platform-specific requirements (Android SDK, Xcode, zig for cross-compilation) a
 *   **Outline Client**: The end-user application for connecting to the internet through an Outline server.
 *   **Server Manager**: The application used to create and manage Outline servers on cloud providers.
 *   **Electron**: Framework used to build the desktop versions of the Outline Client and Server Manager.
-*   **Cordova**: Framework used to build the mobile (iOS/Android) and macOS versions of the Outline Client.
+*   **Capacitor**: Framework used to build the mobile (iOS/Android) versions of the Outline Client.
 *   **Lit**: The UI framework for web components. All new components use Lit. The client has fully migrated; the server_manager still has legacy Polymer components in its app shell being migrated.
 *   **OutlineAction**: A custom build script (`.action.sh` or `.action.mjs`) that defines a task runnable via `npm run action`.

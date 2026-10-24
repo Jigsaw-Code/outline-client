@@ -124,7 +124,8 @@ export class App {
 
     this.updater.setListener(this.updateDownloaded.bind(this));
 
-    // Register Cordova mobile foreground event to sync server connectivity.
+    // The mobile (Capacitor) app fires this when it returns to the foreground;
+    // sync server connectivity then.
     document.addEventListener(
       'resume',
       this.syncConnectivityStateToServerCards.bind(this)
@@ -876,7 +877,8 @@ export class App {
   }
 
   private isWindows() {
-    return !('cordova' in window);
+    // Electron is the only shell without the Capacitor runtime global.
+    return !('Capacitor' in window);
   }
 
   private setAppearance(appearance: Appearance) {
