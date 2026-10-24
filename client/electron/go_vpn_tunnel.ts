@@ -62,6 +62,18 @@ export class GoVpnTunnel implements VpnTunnel {
 
   private reconnectedListener?: () => void;
 
+  // Serialises calls to updateUdpAndRestartTun2socks().
+  // On Windows, both the 'resume' power event and a routing-daemon CONNECTED
+  // event can fire simultaneously after a system sleep, which would otherwise
+  // cause two parallel launch() calls and a "already been launched" error.
+  //
+  // isRestartingTun2socks: true while a restart is actively running.
+  // pendingTun2socksRestart: true when a second call arrived during a restart,
+  //   so that any adapter or UDP-state change captured in the interim is not
+  //   silently discarded — the loop re-runs once the current restart finishes.
+  private isRestartingTun2socks = false;
+  private pendingTun2socksRestart = false;
+
   constructor(
     private readonly routing: RoutingDaemon,
     readonly keyId: string,
@@ -185,31 +197,51 @@ export class GoVpnTunnel implements VpnTunnel {
   }
 
   private async updateUdpAndRestartTun2socks() {
-    try {
-      if (IS_WINDOWS) {
-        this.isUdpEnabled = await checkUDPConnectivityWindows(
-          this.clientConfig,
-          this.gatewayAdapterIndex,
-          this.isDebugMode
-        );
-      } else {
-        this.isUdpEnabled = await checkUDPConnectivity(
-          this.clientConfig,
-          this.isDebugMode
-        );
-      }
-      console.log(`UDP support now ${this.isUdpEnabled}`);
-    } catch (e) {
-      console.error('connectivity check failed:', e);
+    if (this.isRestartingTun2socks) {
+      // A restart is already running.  Mark that another one is needed so that
+      // any adapter or UDP-state change captured in the interim (e.g. a new
+      // gatewayAdapterIndex written by networkChanged()) is not discarded.
+      this.pendingTun2socksRestart = true;
+      return;
     }
 
-    // Restart tun2socks.
+    this.isRestartingTun2socks = true;
     try {
-      await this.tun2socks.stop();
-    } catch {
-      // Ignore the errors
+      // Loop so that a queued follow-up restart (pendingTun2socksRestart) is
+      // honoured once the current run finishes, without allowing more than one
+      // extra restart to accumulate.
+      do {
+        this.pendingTun2socksRestart = false;
+
+        try {
+          if (IS_WINDOWS) {
+            this.isUdpEnabled = await checkUDPConnectivityWindows(
+              this.clientConfig,
+              this.gatewayAdapterIndex,
+              this.isDebugMode
+            );
+          } else {
+            this.isUdpEnabled = await checkUDPConnectivity(
+              this.clientConfig,
+              this.isDebugMode
+            );
+          }
+          console.log(`UDP support now ${this.isUdpEnabled}`);
+        } catch (e) {
+          console.error('connectivity check failed:', e);
+        }
+
+        // Restart tun2socks.
+        try {
+          await this.tun2socks.stop();
+        } catch {
+          // Ignore the errors
+        }
+        await this.startTun2socks();
+      } while (this.pendingTun2socksRestart);
+    } finally {
+      this.isRestartingTun2socks = false;
     }
-    await this.startTun2socks();
   }
 
   // Use #onceDisconnected to be notified when the tunnel terminates.
@@ -304,6 +336,11 @@ class GoTun2socks {
     isUdpEnabled: boolean,
     args: string[]
   ): Promise<void> {
+    // Re-arm the auto-restart loop.  stop() sets stopRequested=true; clearing
+    // it here ensures that if tun2socks crashes after a stop()+start() cycle
+    // (e.g. after a system resume) the loop will still restart it.
+    this.stopRequested = false;
+
     // ./tun2socks.exe \
     //   -tunName outline-tap0 -tunDNS 1.1.1.1,9.9.9.9 \
     //   -tunAddr 10.0.85.2 -tunGw 10.0.85.1 -tunMask 255.255.255.0 \
