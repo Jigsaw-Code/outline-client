@@ -290,6 +290,12 @@ function createTrayIconImage(imageName: string) {
   if (image.isEmpty()) {
     throw new Error(`cannot find ${imageName} tray icon image`);
   }
+  // The source PNGs are ~1024px square, which is fine on Linux/Windows but
+  // renders as a massive icon (or gets clipped) in the macOS menu bar, where
+  // status items expect ~22pt. Resize to a menu-bar-friendly size on Darwin.
+  if (process.platform === 'darwin') {
+    return image.resize({width: 22, height: 22});
+  }
   return image;
 }
 

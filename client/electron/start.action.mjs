@@ -20,6 +20,7 @@ import {runAction} from '@outline/infrastructure/build/run_action.mjs';
 import {spawnStream} from '@outline/infrastructure/build/spawn_stream.mjs';
 import electron from 'electron';
 
+import {stageRuntimeAssets} from './stage_runtime_assets.mjs';
 import {getBuildParameters} from '../build/get_build_parameters.mjs';
 
 /**
@@ -46,12 +47,12 @@ export async function main(...parameters) {
     `--arch=${arch}`
   );
 
+  const appPath = path.join(getRootDir(), 'output', 'client', 'electron');
+  await stageRuntimeAssets(appPath);
+
   process.env.OUTLINE_DEBUG = buildMode === 'debug';
 
-  await spawnStream(
-    electron,
-    path.join(getRootDir(), 'output', 'client', 'electron')
-  );
+  await spawnStream(electron, appPath);
 }
 
 if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
